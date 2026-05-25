@@ -1,6 +1,9 @@
 import logoImage from '../assets/LTNJROTC Logo.png';
+import { useAuth } from '../context/AuthContext';
 
 function SiteHeader({ activePage, isMenuOpen, isScrolled, onToggleMenu, pages }) {
+  const { user, signOut } = useAuth();
+
   return (
     <header className={`topbar${isScrolled ? ' is-scrolled' : ''}`}>
       <a href="#/home" className="brand-block">
@@ -26,6 +29,20 @@ function SiteHeader({ activePage, isMenuOpen, isScrolled, onToggleMenu, pages })
         >
           Menu
         </button>
+        {user ? (
+          <>
+            <a href="#/dashboard" className="top-link">
+              Dashboard
+            </a>
+            <button type="button" className="top-link" onClick={signOut}>
+              Logout
+            </button>
+          </>
+        ) : (
+          <a href="#/login" className="top-link">
+            Login
+          </a>
+        )}
       </div>
 
       <nav className={`top-actions${isMenuOpen ? ' is-open' : ''}`} aria-label="Primary">

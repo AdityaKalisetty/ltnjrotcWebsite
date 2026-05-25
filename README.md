@@ -16,3 +16,12 @@ Note: This will impact Vite dev & build performances.
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Cadet Auth Setup
+
+This project now expects roster-based Supabase auth:
+
+1. Run [supabase/cadet_profiles_roster_auth.sql](/abs/path/c:/Users/adity/Desktop/ltnjrotc-site/supabase/cadet_profiles_roster_auth.sql) in the Supabase SQL editor.
+2. Preload each cadet into `public.cadet_profiles` with their real email address.
+3. Create or invite the matching auth users from the Supabase dashboard or an admin script.
+4. Cadets use the login page to request a password setup email and then choose their own password.

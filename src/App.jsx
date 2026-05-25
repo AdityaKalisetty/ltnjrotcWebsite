@@ -18,6 +18,10 @@ import CurrentMonthPage from './pages/CurrentMonthPage';
 import HomePage from './pages/HomePage';
 import PhotosPage from './pages/PhotosPage';
 import EventGallery from './pages/EventGallery';
+import { AuthProvider } from './context/AuthContext';
+import LoginPage from './pages/LoginPage';
+import CadetDashboard from './pages/CadetDashboard';
+import AccountSetupPage from './pages/AccountSetupPage';
 
 const themeOptions = [
   { id: 'light', label: 'Trailblazer', icon: 'T' },
@@ -141,6 +145,15 @@ function App() {
         return <ChainOfCommandPage chainOfCommand={chainOfCommand} />;
       case 'current-month':
         return <CurrentMonthPage currentMonthSpotlight={currentMonthSpotlight} />;
+      case 'login':
+        return <LoginPage />;
+      case 'dashboard':
+        return <CadetDashboard />;
+      case 'account':
+        if (activePage.startsWith('account/setup')) {
+          return <AccountSetupPage />;
+        }
+        return <LoginPage />;
       default:
         return (
           <HomePage
@@ -156,16 +169,17 @@ function App() {
   };
 
   return (
-    <div className="site-shell">
-      <SiteHeader
-        activePage={activePage.split('/')[0]}
-        isMenuOpen={isMenuOpen}
-        isScrolled={isScrolled}
-        onToggleMenu={() => setIsMenuOpen((currentValue) => !currentValue)}
-        pages={pages}
-      />
+    <AuthProvider>
+      <div className="site-shell">
+        <SiteHeader
+          activePage={activePage.split('/')[0]}
+          isMenuOpen={isMenuOpen}
+          isScrolled={isScrolled}
+          onToggleMenu={() => setIsMenuOpen((currentValue) => !currentValue)}
+          pages={pages}
+        />
 
-      <main>{renderPage()}</main>
+        <main>{renderPage()}</main>
 
       <div className="floating-theme-menu">
         {isThemeMenuOpen && (
@@ -200,6 +214,7 @@ function App() {
         </button>
       </div>
     </div>
+    </AuthProvider>
   );
 }
 

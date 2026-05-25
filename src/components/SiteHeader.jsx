@@ -34,7 +34,7 @@ function SiteHeader({ activePage, isMenuOpen, isScrolled, onToggleMenu, pages })
             <a href="#/dashboard" className="top-link">
               Dashboard
             </a>
-            <button type="button" className="top-link" onClick={signOut}>
+            <button type="button" className="top-link top-link-button" onClick={signOut}>
               Logout
             </button>
           </>

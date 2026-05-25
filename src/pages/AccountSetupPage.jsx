@@ -3,7 +3,7 @@ import SectionHeader from '../components/SectionHeader';
 import { useAuth } from '../context/AuthContext';
 
 function AccountSetupPage() {
-  const { loading, session, updatePassword } = useAuth();
+  const { authEvent, loading, session, updatePassword } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -45,14 +45,28 @@ function AccountSetupPage() {
     setIsSubmitting(true);
 
     try {
-      const { error: updateError } = await updatePassword(password);
+      const updateResult = await Promise.race([
+        updatePassword(password),
+        new Promise((_, reject) => {
+          window.setTimeout(() => {
+            reject(new Error('Password update timed out. Request a fresh setup link and try again.'));
+          }, 15000);
+        }),
+      ]);
+
+      const { error: updateError } = updateResult;
 
       if (updateError) {
         setError(updateError.message || 'Unable to update your password.');
         return;
       }
 
-      setMessage('Password updated. Redirecting to your dashboard...');
+      setMessage('Password updated. Redirecting to login...');
+      window.setTimeout(() => {
+        window.location.hash = '#/login';
+      }, 1200);
+    } catch (submitError) {
+      setError(submitError.message || 'Unable to update your password.');
     } finally {
       setIsSubmitting(false);
     }
@@ -71,40 +85,46 @@ function AccountSetupPage() {
           <p>Preparing your secure session...</p>
         ) : !session ? (
           <div style={{ display: 'grid', gap: '1rem' }}>
-            <p>This password setup link is missing or expired. Request a new setup email from the login page.</p>
-            <a href="#/login" className="ghost-button">
+            <p className="auth-support-copy">This password setup link is missing or expired. Request a new setup email from the login page.</p>
+            <a href="#/login" className="ghost-button auth-action-button">
               Back to Login
             </a>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
-            <label>
-              New password
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Choose a secure password"
-              />
-            </label>
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {authEvent && <p className="auth-status-chip">Auth state: {authEvent}</p>}
 
-            <label>
-              Confirm password
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="Re-enter your password"
-              />
-            </label>
+            <form onSubmit={handleSubmit} className="auth-form">
+              <label className="auth-field">
+                <span className="auth-label">New password</span>
+                <input
+                  className="auth-input"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Choose a secure password"
+                />
+              </label>
 
-            {error && <p style={{ color: '#ffcccb' }}>{error}</p>}
-            {message && <p style={{ color: '#b9dca8' }}>{message}</p>}
+              <label className="auth-field">
+                <span className="auth-label">Confirm password</span>
+                <input
+                  className="auth-input"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="Re-enter your password"
+                />
+              </label>
 
-            <button type="submit" className="join-button" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save password'}
-            </button>
-          </form>
+              {error && <p className="auth-message auth-message--error">{error}</p>}
+              {message && <p className="auth-message auth-message--success">{message}</p>}
+
+              <button type="submit" className="join-button auth-action-button" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save password'}
+              </button>
+            </form>
+          </div>
         )}
       </div>
     </section>

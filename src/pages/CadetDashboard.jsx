@@ -75,7 +75,7 @@ function CadetDashboard() {
             <p className="card-tag">Session</p>
             <p>Logged in as</p>
             <p>{user.email}</p>
-            <button type="button" className="ghost-button" onClick={signOut}>
+            <button type="button" className="ghost-button auth-action-button" onClick={signOut}>
               Sign Out
             </button>
           </div>

@@ -30,8 +30,13 @@ const themeOptions = [
 
 const getRouteFromHash = () => {
   const hash = window.location.hash.replace(/^#\/?/, '');
+  const searchParams = new URLSearchParams(window.location.search);
 
   if (!hash) {
+    if (searchParams.get('auth_flow') === 'recovery') {
+      return 'account/setup';
+    }
+
     return 'home';
   }
 

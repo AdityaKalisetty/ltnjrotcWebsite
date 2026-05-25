@@ -11,6 +11,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authEvent, setAuthEvent] = useState(null);
 
   const fetchProfileByAuthUserId = async (userId) => {
     if (!userId) {
@@ -102,14 +103,26 @@ export function AuthProvider({ children }) {
 
     initializeAuth();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, nextSession) => {
-        if (!mounted) return;
-        setSession(nextSession);
-        setUser(nextSession?.user ?? null);
-        await validateAuthorizedUser(nextSession);
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mounted) return;
+
+      setAuthEvent(event);
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (!nextSession?.user?.id) {
+        setProfile(null);
+        return;
       }
-    );
+
+      // Recovery and password update flows already have a valid temporary session.
+      // Avoid blocking those transitions with extra profile checks in the event callback.
+      if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+        return;
+      }
+
+      void validateAuthorizedUser(nextSession);
+    });
 
     return () => {
       mounted = false;
@@ -137,7 +150,7 @@ export function AuthProvider({ children }) {
   };
 
   const requestPasswordSetup = async (email) => {
-    const redirectTo = `${window.location.origin}${window.location.pathname}#/account/setup`;
+    const redirectTo = `${window.location.origin}${window.location.pathname}?auth_flow=recovery`;
 
     return supabase.auth.resetPasswordForEmail(email, { redirectTo });
   };
@@ -163,12 +176,13 @@ export function AuthProvider({ children }) {
       user,
       profile,
       loading,
+      authEvent,
       signInWithEmail,
       requestPasswordSetup,
       updatePassword,
       signOut,
     }),
-    [session, user, profile, loading]
+    [session, user, profile, loading, authEvent]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

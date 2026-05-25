@@ -88,14 +88,15 @@ function LoginPage() {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
-            <p>
+            <p className="auth-support-copy">
               Only cadets who were preloaded by unit staff can access this portal. If you do not
               already have credentials, contact your instructors or admin team.
             </p>
-            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
-              <label>
-                Email
+            <form onSubmit={handleSubmit} className="auth-form">
+              <label className="auth-field">
+                <span className="auth-label">Email</span>
                 <input
+                  className="auth-input"
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -103,33 +104,35 @@ function LoginPage() {
                 />
               </label>
 
-              <label>
-                Password
+              <label className="auth-field">
+                <span className="auth-label">Password</span>
                 <input
+                  className="auth-input"
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Create a secure password"
+                  placeholder="Enter your password"
                 />
               </label>
 
-              {error && <p style={{ color: '#ffcccb' }}>{error}</p>}
+              {error && <p className="auth-message auth-message--error">{error}</p>}
 
-              <button type="submit" className="join-button" disabled={isSubmitting}>
+              <button type="submit" className="join-button auth-action-button" disabled={isSubmitting}>
                 {isSubmitting ? 'Signing In...' : 'Sign In'}
               </button>
             </form>
 
-            <form onSubmit={handlePasswordSetupRequest} style={{ display: 'grid', gap: '1rem' }}>
-              <h3 style={{ margin: 0 }}>Need to set or reset your password?</h3>
-              <p style={{ margin: 0 }}>
+            <form onSubmit={handlePasswordSetupRequest} className="auth-form auth-form--secondary">
+              <h3 className="auth-form-title">Need to set or reset your password?</h3>
+              <p className="auth-support-copy auth-support-copy--tight">
                 Enter your pre-approved cadet email and we will send you a secure password setup
                 link.
               </p>
 
-              <label>
-                Cadet email
+              <label className="auth-field">
+                <span className="auth-label">Cadet email</span>
                 <input
+                  className="auth-input"
                   type="email"
                   value={setupEmail}
                   onChange={(event) => setSetupEmail(event.target.value)}
@@ -137,10 +140,10 @@ function LoginPage() {
                 />
               </label>
 
-              {setupError && <p style={{ color: '#ffcccb' }}>{setupError}</p>}
-              {setupMessage && <p style={{ color: '#b9dca8' }}>{setupMessage}</p>}
+              {setupError && <p className="auth-message auth-message--error">{setupError}</p>}
+              {setupMessage && <p className="auth-message auth-message--success">{setupMessage}</p>}
 
-              <button type="submit" className="ghost-button" disabled={isSendingSetup}>
+              <button type="submit" className="ghost-button auth-action-button" disabled={isSendingSetup}>
                 {isSendingSetup ? 'Sending...' : 'Email Me a Setup Link'}
               </button>
             </form>

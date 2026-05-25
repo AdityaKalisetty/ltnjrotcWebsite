@@ -25,3 +25,7 @@ This project now expects roster-based Supabase auth:
 2. Preload each cadet into `public.cadet_profiles` with their real email address.
 3. Create or invite the matching auth users from the Supabase dashboard or an admin script.
 4. Cadets use the login page to request a password setup email and then choose their own password.
+
+For local testing, add this redirect URL in Supabase Auth:
+
+- `http://localhost:5173/?auth_flow=recovery`

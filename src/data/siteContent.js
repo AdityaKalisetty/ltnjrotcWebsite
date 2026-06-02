@@ -267,13 +267,13 @@ export const chainOfCommand = [
       {
         role: 'Senior Naval Science Instructor',
         name: 'Lieutenant Colonel Hamartrya Tharpe',
-        photo: null,
-        placeholder: 'SNI',
+        photo: staffPhotos['SNSI Hamartrya Tharpe.jpg'],
+        placeholder: 'SNSI',
       },
       {
         role: 'Naval Science Instructor',
         name: 'Senior Chief Petty Officer Keven Scullin',
-        photo: null,
+        photo: staffPhotos['NSI Keven Scullin.jpg'],
         placeholder: 'NSI',
       },
     ],

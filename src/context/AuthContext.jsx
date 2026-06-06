@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabaseClient';
 const AuthContext = createContext(null);
 const UNAUTHORIZED_MESSAGE =
   'This account is not authorized for the cadet portal. Please contact unit staff.';
-const PROFILE_COLUMNS = 'id, auth_user_id, name, email, rank, platoon, role, awards';
+const PROFILE_COLUMNS =
+  'id, auth_user_id, name, email, rank, ns_level, platoon, role, profile_photo_url, ribbons, competition_signups, overdue_forms, awards';
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
@@ -170,6 +171,10 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const refreshProfile = async () => {
+    return fetchProfileByAuthUserId(session?.user?.id || user?.id);
+  };
+
   const value = useMemo(
     () => ({
       session,
@@ -181,6 +186,7 @@ export function AuthProvider({ children }) {
       requestPasswordSetup,
       updatePassword,
       signOut,
+      refreshProfile,
     }),
     [session, user, profile, loading, authEvent]
   );

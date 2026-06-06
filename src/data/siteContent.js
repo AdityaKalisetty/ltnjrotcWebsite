@@ -158,6 +158,7 @@ export const pages = [
   { id: 'home', label: 'Home' },
   { id: 'photos', label: 'Photos' },
   { id: 'calendar', label: 'Calendar' },
+  { id: 'competitions', label: 'Competitions' },
   { id: 'chain-of-command', label: 'Chain of Command' },
   { id: 'current-month', label: 'Current Month' },
 ];
@@ -167,6 +168,38 @@ export const photoCollections = {
   ceremonies: eventGroups.ceremonies,
   socialsAndServices: eventGroups.socialsAndServices,
 };
+
+export const competitionCatalog = [
+  {
+    id: 'area-19-championships-2026',
+    name: 'Area 19 Championships',
+    types: ['Drill', 'Academic'],
+    description:
+      'Regional drill and academic competition for cadets across Area 19. Teams compete in regulation drill, written academics, and leadership exercises.',
+    date: 'June 14, 2026',
+    location: 'Northlake High School',
+    registrationCloses: 'June 1, 2026',
+    formRequirements: [
+      { id: 'parental-consent', label: 'Parental Consent' },
+      { id: 'alternative-transportation', label: 'Alternative Transportation' },
+      { id: 'form-3', label: 'Form 3' },
+    ],
+  },
+  {
+    id: 'eagle-talons-pt-meet-2026',
+    name: 'Eagle Talons PT Meet',
+    types: ['Physical Fitness', 'Team'],
+    description:
+      'A competitive PT meet testing endurance, strength, and teamwork with other NJROTC units from the region.',
+    date: 'June 22, 2026',
+    location: 'Lebanon Trail High School',
+    registrationCloses: 'June 10, 2026',
+    formRequirements: [
+      { id: 'parental-consent', label: 'Parental Consent' },
+      { id: 'medical-release', label: 'Medical Release' },
+    ],
+  },
+];
 
 export const calendarItems = [
   {
@@ -385,18 +418,18 @@ export const currentMonthSpotlight = {
 
 export const quickLinks = [
   {
-    title: 'Photos by Category',
-    text: 'Browse images organized by Competitions, Ceremonies, and Socials & Services.',
-    href: '#/photos',
+    title: 'Competition Registration',
+    text: 'See open competitions, review form requirements, and register from one place.',
+    href: '#/competitions',
   },
   {
-    title: 'Company Calendar',
-    text: 'Keep families and cadets updated on upcoming company happenings.',
+    title: 'Training Calendar',
+    text: 'View the training schedule and stay on top of drills, PT, and events.',
     href: '#/calendar',
   },
   {
-    title: 'Current Month',
-    text: 'Feature the Cadet of the Month and the latest Cadet Gazette.',
-    href: '#/current-month',
+    title: 'Unit Resources',
+    text: 'Find leadership contacts, support information, and quick unit references.',
+    href: '#/chain-of-command',
   },
 ];

@@ -1,7 +1,7 @@
 import logoImage from '../assets/LTNJROTC Logo.png';
 import { useAuth } from '../context/AuthContext';
 
-function SiteHeader({ activePage, isMenuOpen, isScrolled, onToggleMenu, pages }) {
+function SiteHeader({ activePage, isScrolled, pages }) {
   const { user, signOut } = useAuth();
 
   return (
@@ -20,15 +20,6 @@ function SiteHeader({ activePage, isMenuOpen, isScrolled, onToggleMenu, pages })
       </a>
 
       <div className="header-controls">
-        <button
-          type="button"
-          className="icon-button"
-          aria-label="Open menu"
-          aria-expanded={isMenuOpen}
-          onClick={onToggleMenu}
-        >
-          Menu
-        </button>
         {user ? (
           <>
             <a href="#/dashboard" className="top-link">
@@ -45,7 +36,7 @@ function SiteHeader({ activePage, isMenuOpen, isScrolled, onToggleMenu, pages })
         )}
       </div>
 
-      <nav className={`top-actions${isMenuOpen ? ' is-open' : ''}`} aria-label="Primary">
+      <nav className="top-actions" aria-label="Primary">
         {pages.map((page) => (
           <a
             key={page.id}

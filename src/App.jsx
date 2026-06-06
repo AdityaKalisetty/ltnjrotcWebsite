@@ -14,6 +14,7 @@ import {
 } from './data/siteContent';
 import CalendarPage from './pages/CalendarPage';
 import ChainOfCommandPage from './pages/ChainOfCommandPage';
+import CompetitionsPage from './pages/CompetitionsPage';
 import CurrentMonthPage from './pages/CurrentMonthPage';
 import HomePage from './pages/HomePage';
 import PhotosPage from './pages/PhotosPage';
@@ -47,7 +48,6 @@ const getRouteFromHash = () => {
 function App() {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activePage, setActivePage] = useState(() => getRouteFromHash());
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [theme, setTheme] = useState(() => {
@@ -79,7 +79,6 @@ function App() {
   useEffect(() => {
     const syncRoute = () => {
       setActivePage(getRouteFromHash());
-      setIsMenuOpen(false);
       setIsThemeMenuOpen(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -148,6 +147,8 @@ function App() {
         );
       case 'chain-of-command':
         return <ChainOfCommandPage chainOfCommand={chainOfCommand} />;
+      case 'competitions':
+        return <CompetitionsPage />;
       case 'current-month':
         return <CurrentMonthPage currentMonthSpotlight={currentMonthSpotlight} />;
       case 'login':
@@ -178,9 +179,7 @@ function App() {
       <div className="site-shell">
         <SiteHeader
           activePage={activePage.split('/')[0]}
-          isMenuOpen={isMenuOpen}
           isScrolled={isScrolled}
-          onToggleMenu={() => setIsMenuOpen((currentValue) => !currentValue)}
           pages={pages}
         />
 

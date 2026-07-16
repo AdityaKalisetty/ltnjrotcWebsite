@@ -3,15 +3,21 @@ import SectionHeader from '../components/SectionHeader';
 import { useAuth } from '../context/AuthContext';
 
 function LoginPage() {
-  const { user, loading, signInWithEmail, requestPasswordSetup } = useAuth();
+  const { user, loading, signInWithEmail, signUpWithEmail, requestPasswordReset } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
   const [error, setError] = useState('');
-  const [setupEmail, setSetupEmail] = useState('');
-  const [setupMessage, setSetupMessage] = useState('');
-  const [setupError, setSetupError] = useState('');
+  const [signupMessage, setSignupMessage] = useState('');
+  const [signupError, setSignupError] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetError, setResetError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSendingSetup, setIsSendingSetup] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -31,40 +37,78 @@ function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const { error: signInError } = await signInWithEmail(email, password);
-      if (signInError) {
-        setError(signInError.message || 'Unable to sign in.');
+      const { error: logInError } = await signInWithEmail(email, password);
+      if (logInError) {
+        setError(logInError.message || 'Unable to log in.');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handlePasswordSetupRequest = async (event) => {
+  const handleCreateAccount = async (event) => {
     event.preventDefault();
-    setSetupError('');
-    setSetupMessage('');
+    setSignupError('');
+    setSignupMessage('');
 
-    if (!setupEmail) {
-      setSetupError('Enter your school email address first.');
+    if (!fullName || !signupEmail || !signupPassword) {
+      setSignupError('Name, email, and password are required.');
       return;
     }
 
-    setIsSendingSetup(true);
+    if (signupPassword.length < 8) {
+      setSignupError('Use at least 8 characters for your password.');
+      return;
+    }
+
+    setIsCreatingAccount(true);
 
     try {
-      const { error: requestError } = await requestPasswordSetup(setupEmail);
+      const { error: signUpError } = await signUpWithEmail({
+        email: signupEmail,
+        password: signupPassword,
+        name: fullName,
+      });
 
-      if (requestError) {
-        setSetupError(requestError.message || 'Unable to send a password setup email.');
+      if (signUpError) {
+        setSignupError(signUpError.message || 'Unable to create your account.');
         return;
       }
 
-      setSetupMessage(
-        'If that email belongs to an approved cadet account, a password setup link has been sent.'
+      setSignupMessage(
+        'Account created. Check your email, verify your address, then come back here to log in.'
       );
+      setFullName('');
+      setSignupEmail('');
+      setSignupPassword('');
     } finally {
-      setIsSendingSetup(false);
+      setIsCreatingAccount(false);
+    }
+  };
+
+  const handlePasswordResetRequest = async (event) => {
+    event.preventDefault();
+    setResetError('');
+    setResetMessage('');
+
+    if (!resetEmail) {
+      setResetError('Enter your email first.');
+      return;
+    }
+
+    setIsSendingReset(true);
+
+    try {
+      const { error: requestError } = await requestPasswordReset(resetEmail);
+
+      if (requestError) {
+        setResetError(requestError.message || 'Unable to send a password reset email.');
+        return;
+      }
+
+      setResetMessage('If that email exists, a password reset link has been sent.');
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -72,8 +116,8 @@ function LoginPage() {
     <section className="page-section">
       <SectionHeader
         eyebrow="Cadet Access"
-        title="Sign In"
-        text="Sign in with the email and password assigned to your pre-approved cadet account."
+        title="Log In"
+        text="Cadets can create an account, verify their email, and then log in to manage their own profile."
       />
 
       <div className="content-panel">
@@ -81,7 +125,7 @@ function LoginPage() {
           <p>Checking your session...</p>
         ) : user ? (
           <div>
-            <p>You are already signed in.</p>
+            <p>You are already logged in.</p>
             <a href="#/dashboard" className="ghost-button">
               Go to Dashboard
             </a>
@@ -89,9 +133,11 @@ function LoginPage() {
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
             <p className="auth-support-copy">
-              Only cadets who were preloaded by unit staff can access this portal. If you do not
-              already have credentials, contact your instructors or admin team.
+              Create your own account with the email you want to use for NJROTC, verify it from
+              your inbox, and then log in here. After that, you can fill out and update your
+              dashboard profile at any time.
             </p>
+
             <form onSubmit={handleSubmit} className="auth-form">
               <label className="auth-field">
                 <span className="auth-label">Email</span>
@@ -118,33 +164,80 @@ function LoginPage() {
               {error && <p className="auth-message auth-message--error">{error}</p>}
 
               <button type="submit" className="join-button auth-action-button" disabled={isSubmitting}>
-                {isSubmitting ? 'Signing In...' : 'Sign In'}
+                {isSubmitting ? 'Logging In...' : 'Log In'}
               </button>
             </form>
 
-            <form onSubmit={handlePasswordSetupRequest} className="auth-form auth-form--secondary">
-              <h3 className="auth-form-title">Need to set or reset your password?</h3>
+            <form onSubmit={handleCreateAccount} className="auth-form auth-form--secondary">
+              <h3 className="auth-form-title">Create account</h3>
               <p className="auth-support-copy auth-support-copy--tight">
-                Enter your pre-approved cadet email and we will send you a secure password setup
-                link.
+                This creates your cadet portal account. After email verification, your profile will
+                be ready for you to complete in the dashboard.
               </p>
 
               <label className="auth-field">
-                <span className="auth-label">Cadet email</span>
+                <span className="auth-label">Full name</span>
+                <input
+                  className="auth-input"
+                  type="text"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  placeholder="Cadet name"
+                />
+              </label>
+
+              <label className="auth-field">
+                <span className="auth-label">Email</span>
                 <input
                   className="auth-input"
                   type="email"
-                  value={setupEmail}
-                  onChange={(event) => setSetupEmail(event.target.value)}
+                  value={signupEmail}
+                  onChange={(event) => setSignupEmail(event.target.value)}
                   placeholder="cadet@example.com"
                 />
               </label>
 
-              {setupError && <p className="auth-message auth-message--error">{setupError}</p>}
-              {setupMessage && <p className="auth-message auth-message--success">{setupMessage}</p>}
+              <label className="auth-field">
+                <span className="auth-label">Password</span>
+                <input
+                  className="auth-input"
+                  type="password"
+                  value={signupPassword}
+                  onChange={(event) => setSignupPassword(event.target.value)}
+                  placeholder="Choose a password"
+                />
+              </label>
 
-              <button type="submit" className="ghost-button auth-action-button" disabled={isSendingSetup}>
-                {isSendingSetup ? 'Sending...' : 'Email Me a Setup Link'}
+              {signupError && <p className="auth-message auth-message--error">{signupError}</p>}
+              {signupMessage && <p className="auth-message auth-message--success">{signupMessage}</p>}
+
+              <button type="submit" className="ghost-button auth-action-button" disabled={isCreatingAccount}>
+                {isCreatingAccount ? 'Creating account...' : 'Sign Up'}
+              </button>
+            </form>
+
+            <form onSubmit={handlePasswordResetRequest} className="auth-form auth-form--secondary">
+              <h3 className="auth-form-title">Forgot your password?</h3>
+              <p className="auth-support-copy auth-support-copy--tight">
+                Enter your email and we will send you a secure link to reset your password.
+              </p>
+
+              <label className="auth-field">
+                <span className="auth-label">Email</span>
+                <input
+                  className="auth-input"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(event) => setResetEmail(event.target.value)}
+                  placeholder="cadet@example.com"
+                />
+              </label>
+
+              {resetError && <p className="auth-message auth-message--error">{resetError}</p>}
+              {resetMessage && <p className="auth-message auth-message--success">{resetMessage}</p>}
+
+              <button type="submit" className="ghost-button auth-action-button" disabled={isSendingReset}>
+                {isSendingReset ? 'Sending...' : 'Send reset link'}
               </button>
             </form>
           </div>

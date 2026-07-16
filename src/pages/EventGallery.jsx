@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import SectionHeader from '../components/SectionHeader';
-import { photoCollections } from '../data/siteContent';
 
 function slugify(text) {
   return text
@@ -11,7 +10,7 @@ function slugify(text) {
     .replace(/(^-|-$)/g, '');
 }
 
-function EventGallery({ eventSlug }) {
+function EventGallery({ eventSlug, photoCollections }) {
   const [event, setEvent] = useState(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selected, setSelected] = useState(null);

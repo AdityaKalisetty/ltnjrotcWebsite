@@ -1,12 +1,26 @@
 import { useMemo, useState } from 'react';
 import SectionHeader from '../components/SectionHeader';
 import { useAuth } from '../context/AuthContext';
-import { competitionCatalog } from '../data/siteContent';
 import { supabase } from '../lib/supabaseClient';
 
-function CompetitionsPage() {
+function CompetitionsPage({ competitionCatalog = [] }) {
   const { profile, loading, refreshProfile } = useAuth();
   const [savingCompetitionId, setSavingCompetitionId] = useState(null);
+
+  const clearCompletedCompetition = (competitionId) => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const rawCompleted = window.localStorage.getItem('cadetCompletedCompetitions') || '[]';
+      const parsedCompleted = JSON.parse(rawCompleted);
+      if (!Array.isArray(parsedCompleted)) return;
+
+      const nextCompleted = parsedCompleted.filter((item) => item !== competitionId);
+      window.localStorage.setItem('cadetCompletedCompetitions', JSON.stringify(nextCompleted));
+    } catch (error) {
+      console.error('Unable to clear completed competition state', error);
+    }
+  };
 
   const competitionSignups = useMemo(() => {
     const rawSignups = profile?.competition_signups;
@@ -60,6 +74,10 @@ function CompetitionsPage() {
               required_forms: event.formRequirements,
             },
           ];
+
+      if (!isRegistered) {
+        clearCompletedCompetition(competitionId);
+      }
 
       const { error } = await supabase
         .from('cadet_profiles')

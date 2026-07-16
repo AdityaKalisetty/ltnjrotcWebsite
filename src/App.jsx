@@ -8,21 +8,24 @@ import {
   currentMonthSpotlight,
   heroPhotos,
   pages,
-  photoCollections,
   quickLinks,
   weeklyPlan,
 } from './data/siteContent';
 import CalendarPage from './pages/CalendarPage';
 import ChainOfCommandPage from './pages/ChainOfCommandPage';
 import CompetitionsPage from './pages/CompetitionsPage';
-import CurrentMonthPage from './pages/CurrentMonthPage';
 import HomePage from './pages/HomePage';
 import PhotosPage from './pages/PhotosPage';
 import EventGallery from './pages/EventGallery';
 import { AuthProvider } from './context/AuthContext';
+import { SiteContentProvider, useSiteContent } from './context/SiteContentContext';
 import LoginPage from './pages/LoginPage';
 import CadetDashboard from './pages/CadetDashboard';
 import AccountSetupPage from './pages/AccountSetupPage';
+import EnrollmentPage from './pages/EnrollmentPage';
+import UnitResourcesPage from './pages/UnitResourcesPage';
+import AdminToolsPage from './pages/AdminToolsPage';
+import CadetPortfoliosPage from './pages/CadetPortfoliosPage';
 
 const themeOptions = [
   { id: 'light', label: 'Trailblazer', icon: 'T' },
@@ -45,11 +48,12 @@ const getRouteFromHash = () => {
   return hash;
 };
 
-function App() {
+function AppShell() {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activePage, setActivePage] = useState(() => getRouteFromHash());
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { calendarItems, competitionCatalog, currentMonthSpotlight, weeklyPlan, photoCollections } = useSiteContent();
   const [theme, setTheme] = useState(() => {
     const savedTheme = window.localStorage.getItem('ltnjrotc-theme');
 
@@ -132,7 +136,7 @@ function App() {
 
     if (activePage.startsWith('photos/event/')) {
       const eventSlug = activePage.replace(/^photos\/event\//, '');
-      return <EventGallery eventSlug={eventSlug} />;
+      return <EventGallery eventSlug={eventSlug} photoCollections={photoCollections} />;
     }
 
     switch (base) {
@@ -142,19 +146,26 @@ function App() {
         return (
           <CalendarPage
             calendarItems={calendarItems}
+            currentMonthSpotlight={currentMonthSpotlight}
             weeklyPlan={weeklyPlan}
           />
         );
       case 'chain-of-command':
         return <ChainOfCommandPage chainOfCommand={chainOfCommand} />;
+      case 'enrollment':
+        return <EnrollmentPage />;
       case 'competitions':
-        return <CompetitionsPage />;
-      case 'current-month':
-        return <CurrentMonthPage currentMonthSpotlight={currentMonthSpotlight} />;
+        return <CompetitionsPage competitionCatalog={competitionCatalog} />;
+      case 'unit-resources':
+        return <UnitResourcesPage />;
       case 'login':
         return <LoginPage />;
       case 'dashboard':
-        return <CadetDashboard />;
+        return <CadetDashboard competitionCatalog={competitionCatalog} />;
+      case 'portfolios':
+        return <CadetPortfoliosPage competitionCatalog={competitionCatalog} />;
+      case 'admin':
+        return <AdminToolsPage />;
       case 'account':
         if (activePage.startsWith('account/setup')) {
           return <AccountSetupPage />;
@@ -175,15 +186,14 @@ function App() {
   };
 
   return (
-    <AuthProvider>
-      <div className="site-shell">
-        <SiteHeader
-          activePage={activePage.split('/')[0]}
-          isScrolled={isScrolled}
-          pages={pages}
-        />
+    <div className="site-shell">
+      <SiteHeader
+        activePage={activePage.split('/')[0]}
+        isScrolled={isScrolled}
+        pages={pages}
+      />
 
-        <main>{renderPage()}</main>
+      <main>{renderPage()}</main>
 
       <div className="floating-theme-menu">
         {isThemeMenuOpen && (
@@ -218,6 +228,15 @@ function App() {
         </button>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <SiteContentProvider>
+        <AppShell />
+      </SiteContentProvider>
     </AuthProvider>
   );
 }

@@ -25,19 +25,30 @@ function HomePage({
         <div className="hero-overlay" />
 
         <div className="hero-content">
-          <p className="hero-kicker">Lebanon Trail High School</p>
-          <div className="hero-mark">LT</div>
-          <h1>Committed.</h1>
+          <h1 className="hero-live-heading" aria-label="Lead, Innovate, Value, and Empathize">
+            <span className="hero-live-word">
+              <span className="hero-live-initial">L</span>ead,
+            </span>{' '}
+            <span className="hero-live-word">
+              <span className="hero-live-initial">I</span>nnovate,
+            </span>{' '}
+            <span className="hero-live-word">
+              <span className="hero-live-initial">V</span>alue,
+            </span>{' '}
+            <span className="hero-live-word">
+              and <span className="hero-live-initial">E</span>mpathize
+            </span>
+          </h1>
           <p className="hero-text">
             Developing leaders through service, discipline, academics, and teamwork.
           </p>
 
           <div className="hero-actions">
-            <a href="#/current-month" className="join-button">
-              View This Month
+            <a href="#/enrollment" className="join-button">
+              Enrollment
             </a>
-            <a href="#/photos" className="ghost-button">
-              Explore Photos
+            <a href="#/calendar" className="ghost-button">
+              Calendar
             </a>
           </div>
         </div>
@@ -82,7 +93,7 @@ function HomePage({
         <SectionHeader
           eyebrow="Site Sections"
           title="Everything Cadets and Families Need"
-          text="These pages give the site a clearer structure: photos, scheduling, leadership information, and a monthly spotlight page."
+          text="These pages give the site a clearer structure for scheduling, leadership information, photos, and future enrollment details."
         />
 
         <div className="feature-grid">
@@ -101,9 +112,9 @@ function HomePage({
           <p className="info-label">Why This Structure</p>
           <h2>Built for updates throughout the year.</h2>
           <p className="info-text">
-            The site now has dedicated areas for archives, schedules, leadership, and
-            monthly recognition so it can grow with the company instead of feeling like
-            a single poster page.
+            The site now has dedicated areas for schedules, leadership, archives, and
+            cadet-only tools so it can keep growing with the company instead of feeling
+            like a single poster page.
           </p>
         </div>
 

@@ -156,11 +156,10 @@ const eventGroups = {
 
 export const pages = [
   { id: 'home', label: 'Home' },
-  { id: 'photos', label: 'Photos' },
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'competitions', label: 'Competitions' },
   { id: 'chain-of-command', label: 'Chain of Command' },
-  { id: 'current-month', label: 'Current Month' },
+  { id: 'enrollment', label: 'Enrollment' },
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'photos', label: 'Photos' },
 ];
 
 export const photoCollections = {
@@ -173,7 +172,7 @@ export const competitionCatalog = [
   {
     id: 'area-19-championships-2026',
     name: 'Area 19 Championships',
-    types: ['Drill', 'Academic'],
+    types: ['Drill', 'Academic', 'Physical Training'],
     description:
       'Regional drill and academic competition for cadets across Area 19. Teams compete in regulation drill, written academics, and leadership exercises.',
     date: 'June 14, 2026',
@@ -188,7 +187,7 @@ export const competitionCatalog = [
   {
     id: 'eagle-talons-pt-meet-2026',
     name: 'Eagle Talons PT Meet',
-    types: ['Physical Fitness', 'Team'],
+    types: ['Physical Training'],
     description:
       'A competitive PT meet testing endurance, strength, and teamwork with other NJROTC units from the region.',
     date: 'June 22, 2026',
@@ -342,8 +341,8 @@ export const chainOfCommand = [
     members: [
       {
         role: 'Operations Officer',
-        name: 'Currently No One',
-        photo: null,
+        name: 'C/ENS Suraj Gurematti',
+        photo: staffPhotos['OpsO Suraj Gurematti.jpg'],
         placeholder: 'OPS',
       },
       {
@@ -418,18 +417,18 @@ export const currentMonthSpotlight = {
 
 export const quickLinks = [
   {
-    title: 'Competition Registration',
-    text: 'See open competitions, review form requirements, and register from one place.',
-    href: '#/competitions',
-  },
-  {
-    title: 'Training Calendar',
-    text: 'View the training schedule and stay on top of drills, PT, and events.',
+    title: 'Company Calendar',
+    text: 'View the training schedule, company happenings, and the monthly spotlight in one place.',
     href: '#/calendar',
   },
   {
-    title: 'Unit Resources',
-    text: 'Find leadership contacts, support information, and quick unit references.',
+    title: 'Leadership Directory',
+    text: 'Find the company chain of command and the cadets leading each section of the unit.',
     href: '#/chain-of-command',
+  },
+  {
+    title: 'Photo Archive',
+    text: 'Browse ceremonies, competitions, and service events from across the year.',
+    href: '#/photos',
   },
 ];

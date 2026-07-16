@@ -1,6 +1,6 @@
 import SectionHeader from '../components/SectionHeader';
 
-function CalendarPage({ calendarItems, weeklyPlan }) {
+function CalendarPage({ calendarItems, currentMonthSpotlight, weeklyPlan }) {
   return (
     <section className="page-section">
       <SectionHeader
@@ -65,6 +65,28 @@ function CalendarPage({ calendarItems, weeklyPlan }) {
               </div>
             </article>
           ))}
+        </div>
+      </div>
+
+      <div className="content-panel company-happenings-panel">
+        <h3>Monthly Spotlight: {currentMonthSpotlight.month}</h3>
+
+        <div className="monthly-spotlight-grid">
+          <article className="spotlight-panel spotlight-panel--calendar">
+            <p className="card-tag">Recognition</p>
+            <h4>{currentMonthSpotlight.cadet}</h4>
+            <p className="spotlight-name">{currentMonthSpotlight.cadetName}</p>
+            <p>{currentMonthSpotlight.citation}</p>
+          </article>
+
+          <article className="spotlight-panel spotlight-panel--calendar">
+            <p className="card-tag">Newsletter</p>
+            <h4>{currentMonthSpotlight.newsletterTitle}</h4>
+            <p>{currentMonthSpotlight.newsletterSummary}</p>
+            <a href="#newsletter-link" className="view-all-button">
+              Open Gazette
+            </a>
+          </article>
         </div>
       </div>
     </section>

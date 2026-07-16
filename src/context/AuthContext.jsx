@@ -2,10 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
-const UNAUTHORIZED_MESSAGE =
-  'This account is not authorized for the cadet portal. Please contact unit staff.';
 const PROFILE_COLUMNS =
-  'id, auth_user_id, name, email, rank, ns_level, platoon, role, profile_photo_url, ribbons, competition_signups, overdue_forms, awards';
+  'id, auth_user_id, name, email, rank, ns_level, platoon, role, is_admin, profile_photo_url, ribbons, competition_signups, overdue_forms, awards';
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
@@ -34,14 +32,8 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const claimProfileForUser = async (email) => {
-    if (!email) {
-      return null;
-    }
-
-    const { data, error } = await supabase.rpc('claim_my_cadet_profile', {
-      roster_email: email,
-    });
+  const initializeProfileForUser = async () => {
+    const { data, error } = await supabase.rpc('initialize_my_cadet_profile');
 
     if (error || !data) {
       return null;
@@ -63,27 +55,21 @@ export function AuthProvider({ children }) {
     setProfile(null);
   };
 
-  const validateAuthorizedUser = async (nextSession) => {
+  const ensureProfile = async (nextSession) => {
     if (!nextSession?.user?.id) {
       setProfile(null);
       return true;
     }
 
-    const prof = await fetchProfileByAuthUserId(nextSession.user.id);
+    const existingProfile = await fetchProfileByAuthUserId(nextSession.user.id);
 
-    if (prof) {
+    if (existingProfile) {
       return true;
     }
 
-    const linkedProfile = await claimProfileForUser(nextSession.user.email || '');
+    const initializedProfile = await initializeProfileForUser();
 
-    if (linkedProfile) {
-      return true;
-    }
-
-    await supabase.auth.signOut();
-    clearAuthState();
-    return false;
+    return Boolean(initializedProfile);
   };
 
   useEffect(() => {
@@ -95,10 +81,10 @@ export function AuthProvider({ children }) {
       } = await supabase.auth.getSession();
 
       if (!mounted) return;
+
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
-      await validateAuthorizedUser(currentSession);
-
+      await ensureProfile(currentSession);
       setLoading(false);
     };
 
@@ -116,13 +102,11 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // Recovery and password update flows already have a valid temporary session.
-      // Avoid blocking those transitions with extra profile checks in the event callback.
       if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
         return;
       }
 
-      void validateAuthorizedUser(nextSession);
+      void ensureProfile(nextSession);
     });
 
     return () => {
@@ -138,19 +122,34 @@ export function AuthProvider({ children }) {
       return { data, error };
     }
 
-    const isAuthorized = await validateAuthorizedUser(data.session);
+    const isReady = await ensureProfile(data.session);
 
-    if (!isAuthorized) {
+    if (!isReady) {
       return {
         data: null,
-        error: new Error(UNAUTHORIZED_MESSAGE),
+        error: new Error('Unable to prepare your cadet profile. Please try again.'),
       };
     }
 
     return { data, error };
   };
 
-  const requestPasswordSetup = async (email) => {
+  const signUpWithEmail = async ({ email, password, name }) => {
+    const redirectTo = `${window.location.origin}${window.location.pathname}#/login`;
+
+    return supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectTo,
+        data: {
+          name: name?.trim() || '',
+        },
+      },
+    });
+  };
+
+  const requestPasswordReset = async (email) => {
     const redirectTo = `${window.location.origin}${window.location.pathname}?auth_flow=recovery`;
 
     return supabase.auth.resetPasswordForEmail(email, { redirectTo });
@@ -163,10 +162,9 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     clearAuthState();
-    // redirect to login after sign out
     try {
       window.location.hash = '#/login';
-    } catch (e) {
+    } catch (error) {
       // ignore in non-browser environments
     }
   };
@@ -183,7 +181,8 @@ export function AuthProvider({ children }) {
       loading,
       authEvent,
       signInWithEmail,
-      requestPasswordSetup,
+      signUpWithEmail,
+      requestPasswordReset,
       updatePassword,
       signOut,
       refreshProfile,

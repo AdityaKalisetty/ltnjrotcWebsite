@@ -49,7 +49,7 @@ function AccountSetupPage() {
         updatePassword(password),
         new Promise((_, reject) => {
           window.setTimeout(() => {
-            reject(new Error('Password update timed out. Request a fresh setup link and try again.'));
+            reject(new Error('Password update timed out. Request a fresh reset link and try again.'));
           }, 15000);
         }),
       ]);
@@ -61,7 +61,7 @@ function AccountSetupPage() {
         return;
       }
 
-      setMessage('Password updated. Redirecting to login...');
+      setMessage('Password updated. Redirecting to log in...');
       window.setTimeout(() => {
         window.location.hash = '#/login';
       }, 1200);
@@ -76,8 +76,8 @@ function AccountSetupPage() {
     <section className="page-section">
       <SectionHeader
         eyebrow="Cadet Access"
-        title="Set Your Password"
-        text="Use the secure link from your email to choose a password for your cadet portal account."
+        title="Reset Password"
+        text="Use the secure link from your email to choose a new password for your cadet portal account."
       />
 
       <div className="content-panel">
@@ -85,9 +85,9 @@ function AccountSetupPage() {
           <p>Preparing your secure session...</p>
         ) : !session ? (
           <div style={{ display: 'grid', gap: '1rem' }}>
-            <p className="auth-support-copy">This password setup link is missing or expired. Request a new setup email from the login page.</p>
+            <p className="auth-support-copy">This password reset link is missing or expired. Request a new reset email from the login page.</p>
             <a href="#/login" className="ghost-button auth-action-button">
-              Back to Login
+              Back to Log In
             </a>
           </div>
         ) : (

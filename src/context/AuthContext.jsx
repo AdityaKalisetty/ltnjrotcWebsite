@@ -1,5 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import {
+  isSupabaseConfigured,
+  supabase,
+  supabaseUnavailableMessage,
+} from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
 const PROFILE_COLUMNS =
@@ -73,6 +77,13 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false);
+      setAuthEvent('SUPABASE_UNAVAILABLE');
+      clearAuthState();
+      return undefined;
+    }
+
     let mounted = true;
 
     const initializeAuth = async () => {
@@ -116,6 +127,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signInWithEmail = async (email, password) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return {
+        data: null,
+        error: new Error(supabaseUnavailableMessage),
+      };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error || !data?.session) {
@@ -135,6 +153,13 @@ export function AuthProvider({ children }) {
   };
 
   const signUpWithEmail = async ({ email, password, name }) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return {
+        data: null,
+        error: new Error(supabaseUnavailableMessage),
+      };
+    }
+
     const redirectTo = `${window.location.origin}${window.location.pathname}#/login`;
 
     return supabase.auth.signUp({
@@ -150,17 +175,33 @@ export function AuthProvider({ children }) {
   };
 
   const requestPasswordReset = async (email) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return {
+        data: null,
+        error: new Error(supabaseUnavailableMessage),
+      };
+    }
+
     const redirectTo = `${window.location.origin}${window.location.pathname}?auth_flow=recovery`;
 
     return supabase.auth.resetPasswordForEmail(email, { redirectTo });
   };
 
   const updatePassword = async (password) => {
+    if (!isSupabaseConfigured || !supabase) {
+      return {
+        data: null,
+        error: new Error(supabaseUnavailableMessage),
+      };
+    }
+
     return supabase.auth.updateUser({ password });
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     clearAuthState();
     try {
       window.location.hash = '#/login';
@@ -170,6 +211,10 @@ export function AuthProvider({ children }) {
   };
 
   const refreshProfile = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      return null;
+    }
+
     return fetchProfileByAuthUserId(session?.user?.id || user?.id);
   };
 
@@ -180,6 +225,8 @@ export function AuthProvider({ children }) {
       profile,
       loading,
       authEvent,
+      isSupabaseConfigured,
+      authUnavailableMessage: supabaseUnavailableMessage,
       signInWithEmail,
       signUpWithEmail,
       requestPasswordReset,

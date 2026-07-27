@@ -1,16 +1,18 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
+  announcements as defaultAnnouncements,
   calendarItems as defaultCalendarItems,
   competitionCatalog as defaultCompetitionCatalog,
   currentMonthSpotlight as defaultCurrentMonthSpotlight,
   photoCollections as defaultPhotoCollections,
   weeklyPlan as defaultWeeklyPlan,
 } from '../data/siteContent';
-import { supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 
 const SiteContentContext = createContext(null);
 
 const SECTION_TO_DB_KEY = {
+  announcements: 'announcements',
   competitionCatalog: 'competition_catalog',
   calendarItems: 'calendar_items',
   weeklyPlan: 'weekly_plan',
@@ -19,6 +21,7 @@ const SECTION_TO_DB_KEY = {
 };
 
 const DEFAULT_CONTENT = {
+  announcements: defaultAnnouncements,
   competitionCatalog: defaultCompetitionCatalog,
   calendarItems: defaultCalendarItems,
   weeklyPlan: defaultWeeklyPlan,
@@ -28,6 +31,7 @@ const DEFAULT_CONTENT = {
 
 function cloneDefaultContent() {
   return {
+    announcements: JSON.parse(JSON.stringify(DEFAULT_CONTENT.announcements)),
     competitionCatalog: JSON.parse(JSON.stringify(DEFAULT_CONTENT.competitionCatalog)),
     calendarItems: JSON.parse(JSON.stringify(DEFAULT_CONTENT.calendarItems)),
     weeklyPlan: JSON.parse(JSON.stringify(DEFAULT_CONTENT.weeklyPlan)),
@@ -60,6 +64,12 @@ export function SiteContentProvider({ children }) {
   const refreshContent = async () => {
     setLoading(true);
     setError('');
+
+    if (!isSupabaseConfigured || !supabase) {
+      setContent(cloneDefaultContent());
+      setLoading(false);
+      return;
+    }
 
     const { data, error: loadError } = await supabase
       .from('site_content')

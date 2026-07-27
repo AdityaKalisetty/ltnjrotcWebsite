@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import SectionHeader from '../components/SectionHeader';
+import CadetSupportPanel from '../components/CadetSupportPanel';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 
@@ -297,6 +298,7 @@ function CadetDashboard({
       return [];
     }
   });
+  const [dismissedRequirementKeys, setDismissedRequirementKeys] = useState(() => new Set());
   const [showOverdueModal, setShowOverdueModal] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
@@ -317,7 +319,13 @@ function CadetDashboard({
     [competitions, competitionCatalog]
   );
   const ribbons = useMemo(() => sortRibbonList(parseJsonData(activeProfile?.ribbons)), [activeProfile?.ribbons]);
-  const overdueForms = useMemo(() => parseJsonData(activeProfile?.overdue_forms), [activeProfile?.overdue_forms]);
+  const overdueForms = useMemo(
+    () => parseJsonData(activeProfile?.overdue_forms).filter((form) => {
+      const requirementKey = `competition:${form?.competition_id || form?.id || form?.competition_name || form?.name || ''}`;
+      return !dismissedRequirementKeys.has(requirementKey);
+    }),
+    [activeProfile?.overdue_forms, dismissedRequirementKeys]
+  );
 
   const filteredRibbonOptions = useMemo(() => {
     const searchTerm = ribbonSearch.trim().toLowerCase();
@@ -391,6 +399,24 @@ function CadetDashboard({
       setShowOverdueModal(true);
     }
   }, [loading, overdueForms]);
+
+  useEffect(() => {
+    if (!activeProfile?.id) {
+      setDismissedRequirementKeys(new Set());
+      return undefined;
+    }
+
+    let active = true;
+    void supabase
+      .from('cadet_form_overrides')
+      .select('requirement_key')
+      .eq('cadet_id', activeProfile.id)
+      .then(({ data }) => {
+        if (active) setDismissedRequirementKeys(new Set((data || []).map((item) => item.requirement_key)));
+      });
+
+    return () => { active = false; };
+  }, [activeProfile?.id]);
 
   const refreshActiveProfile = async () => {
     if (isManagedView && onManagedProfileRefresh) {
@@ -665,7 +691,7 @@ function CadetDashboard({
   const hasCompetitions = allCompetitions.length > 0;
   const openCompetitions = allCompetitions.filter((competition) => {
     const competitionId = getCompetitionId(competition);
-    return competitionId && !completedCompetitionIds.includes(competitionId);
+    return competitionId && !completedCompetitionIds.includes(competitionId) && !dismissedRequirementKeys.has(`competition:${competitionId}`);
   });
   const overdueCompetitions = overdueForms.length > 0
     ? overdueForms
@@ -684,7 +710,7 @@ function CadetDashboard({
             ? "You're viewing this cadet's dashboard in portfolio mode."
             : isManagedView
             ? "You're editing this cadet's dashboard, including their profile details, forms, and ribbons."
-            : 'This is your personal space for profile details, upcoming forms, and unit resources.'
+            : 'This is your personal space for profile details, upcoming forms, and general knowledge.'
         }
       />
 
@@ -746,12 +772,14 @@ function CadetDashboard({
                   {openCompetitions.map((competition) => {
                     const competitionId = getCompetitionId(competition);
                     const isComplete = completedCompetitionIds.includes(competitionId);
+                    const competitionDate = getCompetitionDate(competition);
+                    const isOverdue = !isComplete && competitionDate && new Date(competitionDate) < new Date();
 
                     return (
                       <li key={competitionId || getCompetitionLabel(competition)}>
                         <button
                           type="button"
-                          className={`forms-list-item${isComplete ? ' is-complete' : ''}`}
+                          className={`forms-list-item${isComplete ? ' is-complete' : ''}${isOverdue ? ' is-overdue' : ''}`}
                           onClick={() => competitionId && setSelectedCompetitionId(competitionId)}
                         >
                           <span>
@@ -779,11 +807,16 @@ function CadetDashboard({
                   Training Calendar
                 </a>
                 <a href="#/unit-resources" className="ghost-button">
-                  Unit Resources
+                  General Knowledge
                 </a>
               </div>
             </div>
           </div>
+
+          <CadetSupportPanel
+            cadetId={activeProfile?.id}
+            canRequest={!readOnly && !isManagedView}
+          />
 
           <div className="dashboard-card ribbons-panel">
             <div className="ribbons-panel-header">

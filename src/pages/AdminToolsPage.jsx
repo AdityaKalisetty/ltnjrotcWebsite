@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import SectionHeader from '../components/SectionHeader';
 import CadetDashboard from './CadetDashboard';
+import FormsCompliancePanel from '../components/FormsCompliancePanel';
 import { useAuth } from '../context/AuthContext';
 import { useSiteContent } from '../context/SiteContentContext';
-import { photoCollections as bundledPhotoCollections } from '../data/siteContent';
 import { supabase } from '../lib/supabaseClient';
 
 const defaultCompetition = {
@@ -40,6 +40,7 @@ const photoCategoryOptions = [
 ];
 
 const EVENT_PHOTO_BUCKET = 'event-photos';
+const ANNOUNCEMENT_BUCKET = 'announcement-posters';
 
 const defaultPhotoEvent = {
   title: '',
@@ -47,6 +48,16 @@ const defaultPhotoEvent = {
   description: '',
   slug: '',
   photos: [],
+};
+
+const defaultAnnouncement = {
+  id: '',
+  title: '',
+  date: '',
+  summary: '',
+  body: '',
+  imageUrl: '',
+  imageStoragePath: '',
 };
 
 function createCompetitionForm(competition) {
@@ -229,6 +240,56 @@ function createPhotoEventForm(event) {
   };
 }
 
+function createAnnouncementForm(announcement) {
+  if (!announcement) {
+    return defaultAnnouncement;
+  }
+
+  return {
+    id: announcement.id || '',
+    title: announcement.title || '',
+    date: announcement.date || '',
+    summary: announcement.summary || '',
+    body: announcement.body || '',
+    imageUrl: announcement.imageUrl || '',
+    imageStoragePath: announcement.imageStoragePath || '',
+  };
+}
+
+function sortAnnouncements(items) {
+  return items.slice().sort((first, second) => {
+    if (first.date && second.date) {
+      return second.date.localeCompare(first.date);
+    }
+
+    if (first.date) {
+      return -1;
+    }
+
+    if (second.date) {
+      return 1;
+    }
+
+    return first.title.localeCompare(second.title);
+  });
+}
+
+function normalizeAnnouncements(items) {
+  return sortAnnouncements(
+    (items || [])
+      .map((item) => ({
+        id: slugify(item.id || item.title),
+        title: item.title.trim(),
+        date: item.date.trim(),
+        summary: item.summary.trim(),
+        body: item.body.trim(),
+        imageUrl: (item.imageUrl || '').trim(),
+        imageStoragePath: (item.imageStoragePath || '').trim(),
+      }))
+      .filter((item) => item.id && item.title)
+  );
+}
+
 function sortPhotoEvents(events) {
   return events.slice().sort((first, second) => {
     if (first.date && second.date) {
@@ -292,6 +353,7 @@ function normalizePhotoCollections(collections) {
 function AdminToolsPage() {
   const { user, profile, loading } = useAuth();
   const {
+    announcements,
     competitionCatalog,
     calendarItems,
     weeklyPlan,
@@ -318,11 +380,17 @@ function AdminToolsPage() {
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [scheduleMessage, setScheduleMessage] = useState('');
   const [scheduleError, setScheduleError] = useState('');
+  const [announcementDrafts, setAnnouncementDrafts] = useState(() =>
+    sortAnnouncements(announcements.map((item) => createAnnouncementForm(item)))
+  );
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState('');
+  const [savingAnnouncements, setSavingAnnouncements] = useState(false);
+  const [announcementMessage, setAnnouncementMessage] = useState('');
+  const [announcementError, setAnnouncementError] = useState('');
   const [photoCollectionDrafts, setPhotoCollectionDrafts] = useState(() => createPhotoCollectionsForm(photoCollections));
   const [selectedPhotoCategory, setSelectedPhotoCategory] = useState('competitions');
   const [selectedPhotoEventSlug, setSelectedPhotoEventSlug] = useState('');
   const [savingPhotos, setSavingPhotos] = useState(false);
-  const [migratingBundledPhotos, setMigratingBundledPhotos] = useState(false);
   const [photoMessage, setPhotoMessage] = useState('');
   const [photoError, setPhotoError] = useState('');
   const [activeTab, setActiveTab] = useState('cadets');
@@ -345,8 +413,18 @@ function AdminToolsPage() {
   }, [currentMonthSpotlight]);
 
   useEffect(() => {
+    setAnnouncementDrafts(sortAnnouncements(announcements.map((item) => createAnnouncementForm(item))));
+  }, [announcements]);
+
+  useEffect(() => {
     setPhotoCollectionDrafts(createPhotoCollectionsForm(photoCollections));
   }, [photoCollections]);
+
+  useEffect(() => {
+    if (!announcementDrafts.some((item) => item.id === selectedAnnouncementId)) {
+      setSelectedAnnouncementId(announcementDrafts[0]?.id || '');
+    }
+  }, [announcementDrafts, selectedAnnouncementId]);
 
   useEffect(() => {
     const events = photoCollectionDrafts[selectedPhotoCategory] || [];
@@ -367,7 +445,7 @@ function AdminToolsPage() {
 
       const { data, error } = await supabase
         .from('cadet_profiles')
-        .select('id, name, email, rank, platoon, role, is_admin')
+        .select('id, name, email, rank, platoon, role, is_admin, competition_signups')
         .order('name', { ascending: true });
 
       if (error) {
@@ -409,6 +487,10 @@ function AdminToolsPage() {
   const activePhotoEvents = useMemo(
     () => photoCollectionDrafts[selectedPhotoCategory] || [],
     [photoCollectionDrafts, selectedPhotoCategory]
+  );
+  const selectedAnnouncement = useMemo(
+    () => announcementDrafts.find((item) => item.id === selectedAnnouncementId) || null,
+    [announcementDrafts, selectedAnnouncementId]
   );
   const selectedPhotoEvent = useMemo(
     () => activePhotoEvents.find((event) => event.slug === selectedPhotoEventSlug) || null,
@@ -537,6 +619,10 @@ function AdminToolsPage() {
     }));
   };
 
+  const updateAnnouncements = (updater) => {
+    setAnnouncementDrafts((current) => sortAnnouncements(updater(current)));
+  };
+
   const handleCreatePhotoEvent = () => {
     const nextEventBase = {
       ...defaultPhotoEvent,
@@ -603,28 +689,35 @@ function AdminToolsPage() {
     setPhotoMessage('Event removed.');
   };
 
-  const deleteStoragePhotos = async (storagePaths) => {
+  const deleteStorageObjects = async (bucketName, storagePaths) => {
     const pathsToDelete = storagePaths.filter(Boolean);
 
     if (pathsToDelete.length === 0) {
       return null;
     }
 
-    const { error } = await supabase.storage.from(EVENT_PHOTO_BUCKET).remove(pathsToDelete);
+    const { error } = await supabase.storage.from(bucketName).remove(pathsToDelete);
     return error || null;
   };
 
-  const buildStoragePhotoPath = (categoryId, eventSlug, fileName, index) => {
+  const deleteStoragePhotos = async (storagePaths) =>
+    deleteStorageObjects(EVENT_PHOTO_BUCKET, storagePaths);
+
+  const buildStorageObjectPath = (folderPath, fileName, index, fallbackName) => {
     const extensionMatch = fileName.match(/\.[^.]+$/);
     const extension = extensionMatch ? extensionMatch[0].toLowerCase() : '.jpg';
-    const baseName = sanitizeFileSegment(fileName.replace(/\.[^.]+$/, '')) || `photo-${index + 1}`;
+    const baseName =
+      sanitizeFileSegment(fileName.replace(/\.[^.]+$/, '')) || `${fallbackName}-${index + 1}`;
     const uniqueSuffix =
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
         : `${Date.now()}-${index + 1}`;
 
-    return `${categoryId}/${eventSlug}/${baseName}-${uniqueSuffix}${extension}`;
+    return `${folderPath}/${baseName}-${uniqueSuffix}${extension}`;
   };
+
+  const buildStoragePhotoPath = (categoryId, eventSlug, fileName, index) =>
+    buildStorageObjectPath(`${categoryId}/${eventSlug}`, fileName, index, 'photo');
 
   const uploadPhotosToStorage = async (categoryId, eventSlug, fileList) => {
     const files = Array.from(fileList || []);
@@ -651,74 +744,168 @@ function AdminToolsPage() {
     );
   };
 
-  const inferExtensionFromPhotoSource = (src, fallbackName = '') => {
-    const sourceMatch = (src || fallbackName).match(/\.(png|jpg|jpeg|webp|avif)(?:$|[?#])/i);
-
-    if (sourceMatch) {
-      return `.${sourceMatch[1].toLowerCase()}`;
-    }
-
-    return '.jpg';
-  };
-
-  const uploadBundledPhotoToStorage = async (categoryId, eventSlug, photo, index) => {
-    const response = await fetch(photo.src);
-
-    if (!response.ok) {
-      throw new Error(`Unable to read bundled photo "${photo.name || `Photo ${index + 1}`}".`);
-    }
-
-    const blob = await response.blob();
-    const extension = inferExtensionFromPhotoSource(photo.src, photo.name);
-    const fileName = `${sanitizeFileSegment(photo.name) || `photo-${index + 1}`}${extension}`;
-    const storagePath = buildStoragePhotoPath(categoryId, eventSlug, fileName, index);
+  const uploadAnnouncementPosterToStorage = async (announcementId, file) => {
+    const storagePath = buildStorageObjectPath(
+      announcementId,
+      file.name,
+      0,
+      'poster'
+    );
     const { error: uploadError } = await supabase.storage
-      .from(EVENT_PHOTO_BUCKET)
-      .upload(storagePath, blob, {
-        upsert: false,
-        contentType: blob.type || undefined,
-      });
+      .from(ANNOUNCEMENT_BUCKET)
+      .upload(storagePath, file, { upsert: false });
 
     if (uploadError) {
       throw uploadError;
     }
 
-    const { data } = supabase.storage.from(EVENT_PHOTO_BUCKET).getPublicUrl(storagePath);
+    const { data } = supabase.storage.from(ANNOUNCEMENT_BUCKET).getPublicUrl(storagePath);
 
     return {
-      src: data.publicUrl,
-      name: photo.name || `Photo ${index + 1}`,
-      storagePath,
+      imageUrl: data.publicUrl,
+      imageStoragePath: storagePath,
     };
   };
 
-  const migrateBundledEventPhotos = async (categoryId, events) => {
-    const migratedEvents = [];
+  const handleCreateAnnouncement = () => {
+    const nextAnnouncement = {
+      ...defaultAnnouncement,
+      id: slugify(`announcement-${Date.now()}`),
+      title: 'New Announcement',
+      date: 'July 16, 2026',
+    };
 
-    for (const event of events) {
-      const eventSlug = slugify(event.slug || event.title);
-      const migratedPhotos = [];
+    updateAnnouncements((current) => [nextAnnouncement, ...current]);
+    setSelectedAnnouncementId(nextAnnouncement.id);
+    setAnnouncementMessage('');
+    setAnnouncementError('');
+  };
 
-      for (let photoIndex = 0; photoIndex < (event.photos || []).length; photoIndex += 1) {
-        const photo = event.photos[photoIndex];
-
-        if (photo.storagePath && photo.src) {
-          migratedPhotos.push(photo);
-          continue;
-        }
-
-        const migratedPhoto = await uploadBundledPhotoToStorage(categoryId, eventSlug, photo, photoIndex);
-        migratedPhotos.push(migratedPhoto);
-      }
-
-      migratedEvents.push({
-        ...event,
-        slug: eventSlug,
-        photos: migratedPhotos,
-      });
+  const handleAnnouncementFieldChange = (field, value) => {
+    if (!selectedAnnouncement) {
+      return;
     }
 
-    return migratedEvents;
+    let nextSelectedId = selectedAnnouncementId;
+
+    updateAnnouncements((current) =>
+      current.map((item) => {
+        if (item.id !== selectedAnnouncementId) {
+          return item;
+        }
+
+        const nextAnnouncement = {
+          ...item,
+          [field]: value,
+        };
+
+        if (field === 'title' && (!item.id || item.id === slugify(item.title))) {
+          nextAnnouncement.id = slugify(value);
+        }
+
+        nextSelectedId = nextAnnouncement.id;
+
+        return nextAnnouncement;
+      })
+    );
+
+    setSelectedAnnouncementId(nextSelectedId);
+  };
+
+  const handleAnnouncementPosterUpload = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file || !selectedAnnouncement) {
+      return;
+    }
+
+    if (!selectedAnnouncement.id) {
+      setAnnouncementError('Give this announcement a title before uploading a poster.');
+      event.target.value = '';
+      return;
+    }
+
+    setAnnouncementError('');
+    setAnnouncementMessage('');
+
+    try {
+      if (selectedAnnouncement.imageStoragePath) {
+        await deleteStorageObjects(ANNOUNCEMENT_BUCKET, [selectedAnnouncement.imageStoragePath]);
+      }
+
+      const poster = await uploadAnnouncementPosterToStorage(selectedAnnouncement.id, file);
+
+      updateAnnouncements((current) =>
+        current.map((item) =>
+          item.id === selectedAnnouncementId
+            ? {
+                ...item,
+                ...poster,
+              }
+            : item
+        )
+      );
+      event.target.value = '';
+    } catch (error) {
+      const message = error?.message || '';
+      setAnnouncementError(
+        /bucket not found/i.test(message)
+          ? 'Announcement poster storage has not been set up yet. Run supabase/announcement_posters_storage.sql in the Supabase SQL Editor, then try again.'
+          : message || 'Unable to upload that announcement poster.'
+      );
+    }
+  };
+
+  const handleRemoveAnnouncementPoster = async () => {
+    if (!selectedAnnouncement?.imageStoragePath) {
+      return;
+    }
+
+    setAnnouncementError('');
+    setAnnouncementMessage('');
+
+    const deleteError = await deleteStorageObjects(ANNOUNCEMENT_BUCKET, [
+      selectedAnnouncement.imageStoragePath,
+    ]);
+
+    if (deleteError) {
+      setAnnouncementError(deleteError.message || 'Unable to remove that announcement poster.');
+      return;
+    }
+
+    updateAnnouncements((current) =>
+      current.map((item) =>
+        item.id === selectedAnnouncementId
+          ? { ...item, imageUrl: '', imageStoragePath: '' }
+          : item
+      )
+    );
+  };
+
+  const handleDeleteAnnouncement = async () => {
+    if (!selectedAnnouncement) {
+      return;
+    }
+
+    setAnnouncementError('');
+    setAnnouncementMessage('');
+
+    if (selectedAnnouncement.imageStoragePath) {
+      const deleteError = await deleteStorageObjects(ANNOUNCEMENT_BUCKET, [
+        selectedAnnouncement.imageStoragePath,
+      ]);
+
+      if (deleteError) {
+        setAnnouncementError(deleteError.message || 'Unable to remove that announcement poster.');
+        return;
+      }
+    }
+
+    updateAnnouncements((current) =>
+      current.filter((item) => item.id !== selectedAnnouncementId)
+    );
+    setSelectedAnnouncementId('');
+    setAnnouncementMessage('Announcement removed.');
   };
 
   const handlePhotoUpload = async (event) => {
@@ -816,46 +1003,6 @@ function AdminToolsPage() {
     setSavingPhotos(false);
   };
 
-  const handleBundledPhotoMigration = async () => {
-    setPhotoError('');
-    setPhotoMessage('');
-    setMigratingBundledPhotos(true);
-
-    try {
-      const sourceCollections = normalizePhotoCollections(
-        photoCollections?.competitions?.length ||
-          photoCollections?.ceremonies?.length ||
-          photoCollections?.socialsAndServices?.length
-          ? photoCollectionDrafts
-          : createPhotoCollectionsForm(bundledPhotoCollections)
-      );
-
-      const migratedCollections = {
-        competitions: await migrateBundledEventPhotos('competitions', sourceCollections.competitions || []),
-        ceremonies: await migrateBundledEventPhotos('ceremonies', sourceCollections.ceremonies || []),
-        socialsAndServices: await migrateBundledEventPhotos(
-          'socialsAndServices',
-          sourceCollections.socialsAndServices || []
-        ),
-      };
-
-      const { error } = await saveSection('photoCollections', migratedCollections);
-
-      if (error) {
-        setPhotoError(error.message || 'Bundled gallery migration failed while saving site content.');
-        setMigratingBundledPhotos(false);
-        return;
-      }
-
-      setPhotoCollectionDrafts(migratedCollections);
-      setPhotoMessage('Bundled event photos migrated to Supabase Storage.');
-    } catch (error) {
-      setPhotoError(error.message || 'Unable to migrate bundled event photos.');
-    } finally {
-      setMigratingBundledPhotos(false);
-    }
-  };
-
   const handleCompetitionSave = async (event) => {
     event.preventDefault();
     setCompetitionMessage('');
@@ -915,6 +1062,36 @@ function AdminToolsPage() {
     setSavingSchedule(false);
   };
 
+  const handleAnnouncementSave = async (event) => {
+    event.preventDefault();
+    setAnnouncementMessage('');
+    setAnnouncementError('');
+
+    const normalizedAnnouncements = normalizeAnnouncements(announcementDrafts);
+    const duplicateIds = normalizedAnnouncements.filter(
+      (item, index) =>
+        normalizedAnnouncements.findIndex((candidate) => candidate.id === item.id) !== index
+    );
+
+    if (duplicateIds.length > 0) {
+      setAnnouncementError('Each announcement needs a unique title.');
+      return;
+    }
+
+    setSavingAnnouncements(true);
+    const { error } = await saveSection('announcements', normalizedAnnouncements);
+
+    if (error) {
+      setAnnouncementError(error.message || 'Unable to save announcements.');
+      setSavingAnnouncements(false);
+      return;
+    }
+
+    setAnnouncementDrafts(normalizedAnnouncements);
+    setAnnouncementMessage('Announcements updated.');
+    setSavingAnnouncements(false);
+  };
+
   return (
     <section className="page-section">
       <SectionHeader
@@ -972,11 +1149,29 @@ function AdminToolsPage() {
           <button
             type="button"
             role="tab"
+            aria-selected={activeTab === 'forms'}
+            className={`ribbon-editor-tab ${activeTab === 'forms' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('forms')}
+          >
+            Forms
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={activeTab === 'schedule'}
             className={`ribbon-editor-tab ${activeTab === 'schedule' ? 'is-active' : ''}`}
             onClick={() => setActiveTab('schedule')}
           >
             Calendar
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'announcements'}
+            className={`ribbon-editor-tab ${activeTab === 'announcements' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('announcements')}
+          >
+            Announcements
           </button>
           <button
             type="button"
@@ -1067,6 +1262,8 @@ function AdminToolsPage() {
             )}
           </section>
         )}
+
+        {activeTab === 'forms' && <FormsCompliancePanel cadets={cadets} />}
 
         {activeTab === 'competitions' && (
           <section className="admin-tab-section admin-section">
@@ -1709,24 +1906,11 @@ function AdminToolsPage() {
                   </span>
                 </div>
                 <div className="admin-photo-actions">
-                  <button
-                    type="button"
-                    className="ghost-button"
-                    onClick={handleBundledPhotoMigration}
-                    disabled={migratingBundledPhotos || savingPhotos}
-                  >
-                    {migratingBundledPhotos ? 'Migrating library...' : 'Migrate bundled library'}
-                  </button>
                   <button type="button" className="ghost-button" onClick={handleCreatePhotoEvent}>
                     New event
                   </button>
                 </div>
               </div>
-
-              <p className="admin-helper-copy">
-                Use `Migrate bundled library` one time to move the existing repo-based event galleries into
-                Supabase Storage.
-              </p>
 
               <div className="admin-photo-layout">
                 <div className="admin-cadet-list">
@@ -1853,6 +2037,147 @@ function AdminToolsPage() {
               <div className="modal-actions modal-actions--start">
                 <button type="submit" className="join-button" disabled={savingPhotos}>
                   {savingPhotos ? 'Saving...' : 'Save Photo Archive'}
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {activeTab === 'announcements' && (
+          <section className="admin-tab-section admin-section">
+            <div className="modal-section-heading">
+              <p className="card-tag">Announcement Board</p>
+              <h4>Create updates and poster announcements</h4>
+            </div>
+
+            <form className="admin-stack-form" onSubmit={handleAnnouncementSave}>
+              <div className="admin-roster-toolbar">
+                <div className="admin-roster-stats">
+                  <span className="admin-status-pill">{announcementDrafts.length} announcements</span>
+                  <span className="admin-status-pill">
+                    {selectedAnnouncement?.imageUrl ? 'Poster attached' : 'No poster attached'}
+                  </span>
+                </div>
+                <div className="admin-photo-actions">
+                  <button type="button" className="ghost-button" onClick={handleCreateAnnouncement}>
+                    New announcement
+                  </button>
+                </div>
+              </div>
+
+              <div className="admin-photo-layout">
+                <div className="admin-cadet-list">
+                  {announcementDrafts.map((announcement) => (
+                    <button
+                      key={announcement.id || announcement.title}
+                      type="button"
+                      className={`admin-cadet-list-item${selectedAnnouncementId === announcement.id ? ' is-active' : ''}`}
+                      onClick={() => setSelectedAnnouncementId(announcement.id)}
+                    >
+                      <strong>{announcement.title || 'Untitled announcement'}</strong>
+                      <span>{announcement.date || 'No date yet'}</span>
+                      <span>{announcement.imageUrl ? 'Poster ready' : 'Text only'}</span>
+                    </button>
+                  ))}
+                  {announcementDrafts.length === 0 && (
+                    <p className="admin-empty-copy">
+                      No announcements yet. Start with `New announcement`.
+                    </p>
+                  )}
+                </div>
+
+                {selectedAnnouncement ? (
+                  <div className="admin-card-stack">
+                    <article className="admin-editor-card">
+                      <div className="admin-editor-card-header">
+                        <strong>Announcement details</strong>
+                        <button type="button" className="ghost-button" onClick={handleDeleteAnnouncement}>
+                          Delete announcement
+                        </button>
+                      </div>
+
+                      <div className="admin-form-grid">
+                        <label className="auth-field">
+                          <span className="auth-label">Title</span>
+                          <input
+                            className="auth-input"
+                            type="text"
+                            value={selectedAnnouncement.title}
+                            onChange={(event) => handleAnnouncementFieldChange('title', event.target.value)}
+                          />
+                        </label>
+                        <label className="auth-field">
+                          <span className="auth-label">Date</span>
+                          <input
+                            className="auth-input"
+                            type="text"
+                            value={selectedAnnouncement.date}
+                            placeholder="July 16, 2026"
+                            onChange={(event) => handleAnnouncementFieldChange('date', event.target.value)}
+                          />
+                        </label>
+                        <label className="auth-field">
+                          <span className="auth-label">Summary</span>
+                          <input
+                            className="auth-input"
+                            type="text"
+                            value={selectedAnnouncement.summary}
+                            onChange={(event) => handleAnnouncementFieldChange('summary', event.target.value)}
+                          />
+                        </label>
+                      </div>
+
+                      <label className="auth-field">
+                        <span className="auth-label">Full announcement</span>
+                        <textarea
+                          className="auth-input admin-textarea"
+                          value={selectedAnnouncement.body}
+                          placeholder="Add the full message that cadets and families should see."
+                          onChange={(event) => handleAnnouncementFieldChange('body', event.target.value)}
+                        />
+                      </label>
+                    </article>
+
+                    <article className="admin-editor-card">
+                      <div className="admin-editor-card-header">
+                        <strong>Poster image</strong>
+                        <div className="admin-photo-actions">
+                          <label className="upload-label">
+                            Upload poster
+                            <input type="file" accept="image/*" onChange={handleAnnouncementPosterUpload} />
+                          </label>
+                          {selectedAnnouncement.imageUrl ? (
+                            <button type="button" className="ghost-button" onClick={handleRemoveAnnouncementPoster}>
+                              Remove poster
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {selectedAnnouncement.imageUrl ? (
+                        <img
+                          src={selectedAnnouncement.imageUrl}
+                          alt={selectedAnnouncement.title}
+                          className="admin-announcement-poster"
+                        />
+                      ) : (
+                        <p className="admin-empty-copy">
+                          No poster uploaded yet. Add an image to show a flyer-style announcement on the home page.
+                        </p>
+                      )}
+                    </article>
+                  </div>
+                ) : (
+                  <p className="admin-empty-copy">Choose an announcement to edit, or create a new one.</p>
+                )}
+              </div>
+
+              {announcementError && <p className="auth-message auth-message--error">{announcementError}</p>}
+              {announcementMessage && <p className="auth-message auth-message--success">{announcementMessage}</p>}
+
+              <div className="modal-actions modal-actions--start">
+                <button type="submit" className="join-button" disabled={savingAnnouncements}>
+                  {savingAnnouncements ? 'Saving...' : 'Save Announcements'}
                 </button>
               </div>
             </form>

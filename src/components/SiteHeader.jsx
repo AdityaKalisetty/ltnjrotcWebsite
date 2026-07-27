@@ -5,11 +5,14 @@ import { useAuth } from '../context/AuthContext';
 function SiteHeader({ activePage, isScrolled, pages }) {
   const { user, profile, signOut } = useAuth();
   const [isCadetMenuOpen, setIsCadetMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isCadetLoggedIn = Boolean(user);
   const isAdmin = Boolean(profile?.is_admin);
+  const isSupplyOfficer = Boolean(profile?.role?.toLowerCase().includes('supply'));
 
   useEffect(() => {
     setIsCadetMenuOpen(false);
+    setIsMobileMenuOpen(false);
   }, [activePage, isCadetLoggedIn]);
 
   return (
@@ -27,6 +30,19 @@ function SiteHeader({ activePage, isScrolled, pages }) {
             <p className="brand-values">Honor Courage Commitment</p>
           </div>
         </a>
+
+        <button
+          type="button"
+          className="mobile-menu-toggle"
+          aria-controls="primary-navigation"
+          aria-expanded={isMobileMenuOpen}
+          aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          onClick={() => setIsMobileMenuOpen((currentValue) => !currentValue)}
+        >
+          <span className="mobile-menu-toggle-line" aria-hidden="true" />
+          <span className="mobile-menu-toggle-line" aria-hidden="true" />
+          <span className="mobile-menu-toggle-line" aria-hidden="true" />
+        </button>
 
         <div className="header-controls">
           {user && (
@@ -52,13 +68,18 @@ function SiteHeader({ activePage, isScrolled, pages }) {
         </div>
       </div>
 
-      <nav className="menu-bar" aria-label="Primary">
+      <nav
+        id="primary-navigation"
+        className={`menu-bar${isMobileMenuOpen ? ' is-open' : ''}`}
+        aria-label="Primary"
+      >
         <div className="top-actions">
           {pages.map((page) => (
             <a
               key={page.id}
               href={`#/${page.id}`}
               className={`top-link menu-link${activePage === page.id ? ' is-active' : ''}`}
+              onClick={() => setIsMobileMenuOpen(false)}
             >
               {page.label}
             </a>
@@ -68,7 +89,7 @@ function SiteHeader({ activePage, isScrolled, pages }) {
             <div className={`menu-dropdown${isCadetMenuOpen ? ' is-open' : ''}`}>
               <button
                 type="button"
-                className={`top-link menu-link menu-dropdown-trigger${activePage === 'competitions' || activePage === 'dashboard' || activePage === 'portfolios' || activePage === 'admin' ? ' is-active' : ''}`}
+                className={`top-link menu-link menu-dropdown-trigger${activePage === 'competitions' || activePage === 'dashboard' || activePage === 'portfolios' || activePage === 'admin' || activePage === 'supply' ? ' is-active' : ''}`}
                 aria-expanded={isCadetMenuOpen}
                 onClick={() => setIsCadetMenuOpen((currentValue) => !currentValue)}
               >
@@ -77,17 +98,22 @@ function SiteHeader({ activePage, isScrolled, pages }) {
 
               {isCadetMenuOpen && (
                 <div className="menu-dropdown-panel">
-                  <a href="#/dashboard" className="menu-dropdown-link">
+                  <a href="#/dashboard" className="menu-dropdown-link" onClick={() => setIsMobileMenuOpen(false)}>
                     Dashboard
                   </a>
-                  <a href="#/competitions" className="menu-dropdown-link">
+                  <a href="#/competitions" className="menu-dropdown-link" onClick={() => setIsMobileMenuOpen(false)}>
                     Competitions
                   </a>
-                  <a href="#/portfolios" className="menu-dropdown-link">
+                  <a href="#/portfolios" className="menu-dropdown-link" onClick={() => setIsMobileMenuOpen(false)}>
                     Cadet Portfolios
                   </a>
+                  {(isAdmin || isSupplyOfficer) && (
+                    <a href="#/supply" className="menu-dropdown-link" onClick={() => setIsMobileMenuOpen(false)}>
+                      Supply Tools
+                    </a>
+                  )}
                   {isAdmin && (
-                    <a href="#/admin" className="menu-dropdown-link">
+                    <a href="#/admin" className="menu-dropdown-link" onClick={() => setIsMobileMenuOpen(false)}>
                       Admin Tools
                     </a>
                   )}

@@ -6,7 +6,6 @@ function CalendarPage({ calendarItems, currentMonthSpotlight, weeklyPlan }) {
       <SectionHeader
         eyebrow="Company Calendar"
         title="Weekly Plan and Company Happenings"
-        text="The weekly board gives cadets a quick read on the schedule, while company happenings still track the larger events and important dates."
       />
 
       <div className="weekly-plan-shell">

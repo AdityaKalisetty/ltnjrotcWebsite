@@ -3,13 +3,9 @@ import './App.css';
 import logoSvg from './assets/LTNJROTC Logo.svg';
 import SiteHeader from './components/SiteHeader';
 import {
-  calendarItems,
   chainOfCommand,
-  currentMonthSpotlight,
   heroPhotos,
   pages,
-  quickLinks,
-  weeklyPlan,
 } from './data/siteContent';
 import CalendarPage from './pages/CalendarPage';
 import ChainOfCommandPage from './pages/ChainOfCommandPage';
@@ -18,6 +14,8 @@ import HomePage from './pages/HomePage';
 import PhotosPage from './pages/PhotosPage';
 import EventGallery from './pages/EventGallery';
 import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
+import { supabase } from './lib/supabaseClient';
 import { SiteContentProvider, useSiteContent } from './context/SiteContentContext';
 import LoginPage from './pages/LoginPage';
 import CadetDashboard from './pages/CadetDashboard';
@@ -25,12 +23,14 @@ import AccountSetupPage from './pages/AccountSetupPage';
 import EnrollmentPage from './pages/EnrollmentPage';
 import UnitResourcesPage from './pages/UnitResourcesPage';
 import AdminToolsPage from './pages/AdminToolsPage';
+import SupplyToolsPage from './pages/SupplyToolsPage';
 import CadetPortfoliosPage from './pages/CadetPortfoliosPage';
 
 const themeOptions = [
   { id: 'light', label: 'Trailblazer', icon: 'T' },
   { id: 'dark', label: 'Navy Pride', icon: 'N' },
 ];
+const overdueTickerCopy = 'Overdue Forms • '.repeat(20);
 
 const getRouteFromHash = () => {
   const hash = window.location.hash.replace(/^#\/?/, '');
@@ -48,12 +48,65 @@ const getRouteFromHash = () => {
   return hash;
 };
 
+function parseJsonList(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== 'string') return [];
+  try {
+    return JSON.parse(value);
+  } catch {
+    return [];
+  }
+}
+
+function hasOverdueForms(profile, dismissedRequirementKeys = new Set()) {
+  if (parseJsonList(profile?.overdue_forms).some((form) => {
+    const requirementKey = `competition:${form?.competition_id || form?.id || form?.competition_name || form?.name || ''}`;
+    return !dismissedRequirementKeys.has(requirementKey);
+  })) return true;
+
+  return parseJsonList(profile?.competition_signups).some((competition) => {
+    if (competition?.completed) return false;
+    const requirementKey = `competition:${competition?.competition_id || competition?.id || competition?.competition_name || competition?.name}`;
+    if (dismissedRequirementKeys.has(requirementKey)) return false;
+    const dueTime = Date.parse(competition?.due_date || competition?.date || '');
+    return !Number.isNaN(dueTime) && dueTime < Date.now();
+  });
+}
+
 function AppShell() {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activePage, setActivePage] = useState(() => getRouteFromHash());
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { calendarItems, competitionCatalog, currentMonthSpotlight, weeklyPlan, photoCollections } = useSiteContent();
+  const [openAnnouncementId, setOpenAnnouncementId] = useState(null);
+  const { profile } = useAuth();
+  const [dismissedRequirementKeys, setDismissedRequirementKeys] = useState(() => new Set());
+
+  useEffect(() => {
+    if (!profile?.id) {
+      setDismissedRequirementKeys(new Set());
+      return undefined;
+    }
+
+    let active = true;
+    void supabase
+      .from('cadet_form_overrides')
+      .select('requirement_key')
+      .eq('cadet_id', profile.id)
+      .then(({ data }) => {
+        if (active) setDismissedRequirementKeys(new Set((data || []).map((item) => item.requirement_key)));
+      });
+
+    return () => { active = false; };
+  }, [profile?.id]);
+  const {
+    announcements,
+    calendarItems,
+    competitionCatalog,
+    currentMonthSpotlight,
+    weeklyPlan,
+    photoCollections,
+  } = useSiteContent();
   const [theme, setTheme] = useState(() => {
     const savedTheme = window.localStorage.getItem('ltnjrotc-theme');
 
@@ -80,6 +133,15 @@ function AppShell() {
     window.localStorage.setItem('ltnjrotc-theme', theme);
   }, [theme]);
 
+  const posterAnnouncements = announcements.filter((announcement) => announcement.imageUrl);
+  const openPosterAnnouncement = posterAnnouncements.find((announcement) => announcement.id === openAnnouncementId) || null;
+
+  useEffect(() => {
+    if (posterAnnouncements.length > 0 && !openAnnouncementId) {
+      setOpenAnnouncementId(posterAnnouncements[0].id);
+    }
+  }, [announcements]);
+
   useEffect(() => {
     const syncRoute = () => {
       setActivePage(getRouteFromHash());
@@ -102,6 +164,51 @@ function AppShell() {
 
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    const revealTargets = Array.from(
+      document.querySelectorAll(
+        'main .page-header, main .content-panel, main .recruiting-video-section, main .announcements-section'
+      )
+    );
+
+    if (!revealTargets.length) {
+      return undefined;
+    }
+
+    const reveal = (element) => element.classList.add('is-visible');
+
+    if (!('IntersectionObserver' in window)) {
+      revealTargets.forEach(reveal);
+      return undefined;
+    }
+
+    revealTargets.forEach((element) => element.classList.add('scroll-reveal'));
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            reveal(entry.target);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -4% 0px' }
+    );
+
+    revealTargets.forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, [
+    activePage,
+    announcements,
+    calendarItems,
+    competitionCatalog,
+    currentMonthSpotlight,
+    photoCollections,
+    weeklyPlan,
+  ]);
 
   useEffect(() => {
     if (heroPhotos.length <= 1) {
@@ -166,6 +273,8 @@ function AppShell() {
         return <CadetPortfoliosPage competitionCatalog={competitionCatalog} />;
       case 'admin':
         return <AdminToolsPage />;
+      case 'supply':
+        return <SupplyToolsPage />;
       case 'account':
         if (activePage.startsWith('account/setup')) {
           return <AccountSetupPage />;
@@ -179,7 +288,7 @@ function AppShell() {
             onPreviousPhoto={showPreviousPhoto}
             onNextPhoto={showNextPhoto}
             onSelectPhoto={setActivePhotoIndex}
-            quickLinks={quickLinks}
+            announcements={announcements}
           />
         );
     }
@@ -187,13 +296,51 @@ function AppShell() {
 
   return (
     <div className="site-shell">
+      {announcements.length > 0 && (
+        <aside className="announcement-bar" aria-label="Announcements">
+          <div className="announcement-bar-items">
+            {announcements.map((announcement) => (
+              <div className="announcement-bar-item" key={announcement.id || announcement.title}>
+                <strong>{announcement.title}</strong>
+                {announcement.summary && <span>{announcement.summary}</span>}
+                {announcement.imageUrl && (
+                  <button type="button" onClick={() => setOpenAnnouncementId(announcement.id)}>
+                    View poster
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </aside>
+      )}
+
       <SiteHeader
         activePage={activePage.split('/')[0]}
         isScrolled={isScrolled}
         pages={pages}
       />
 
+      {hasOverdueForms(profile, dismissedRequirementKeys) && (
+        <a className="overdue-forms-banner" href="#/dashboard" aria-label="Overdue forms: open your dashboard">
+          <span className="overdue-forms-ticker" aria-hidden="true">
+            <span>{overdueTickerCopy}</span>
+            <span>{overdueTickerCopy}</span>
+          </span>
+          <span className="sr-only">Overdue Forms</span>
+        </a>
+      )}
+
       <main>{renderPage()}</main>
+
+      {openPosterAnnouncement && (
+        <div className="announcement-popup-backdrop" role="dialog" aria-modal="true" aria-label={openPosterAnnouncement.title} onClick={() => setOpenAnnouncementId(null)}>
+          <article className="announcement-popup" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="announcement-popup-close" aria-label="Close announcement" onClick={() => setOpenAnnouncementId(null)}>×</button>
+            <img src={openPosterAnnouncement.imageUrl} alt={openPosterAnnouncement.title} />
+            <div className="announcement-popup-copy"><p className="card-tag">Announcement</p><h2>{openPosterAnnouncement.title}</h2>{openPosterAnnouncement.body && <p>{openPosterAnnouncement.body}</p>}</div>
+          </article>
+        </div>
+      )}
 
       <div className="floating-theme-menu">
         {isThemeMenuOpen && (

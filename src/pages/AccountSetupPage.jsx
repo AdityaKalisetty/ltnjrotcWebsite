@@ -3,7 +3,14 @@ import SectionHeader from '../components/SectionHeader';
 import { useAuth } from '../context/AuthContext';
 
 function AccountSetupPage() {
-  const { authEvent, loading, session, updatePassword } = useAuth();
+  const {
+    authEvent,
+    loading,
+    session,
+    isSupabaseConfigured,
+    authUnavailableMessage,
+    updatePassword,
+  } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -83,6 +90,13 @@ function AccountSetupPage() {
       <div className="content-panel">
         {loading ? (
           <p>Preparing your secure session...</p>
+        ) : !isSupabaseConfigured ? (
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            <p className="auth-message auth-message--error">{authUnavailableMessage}</p>
+            <a href="#/login" className="ghost-button auth-action-button">
+              Back to Log In
+            </a>
+          </div>
         ) : !session ? (
           <div style={{ display: 'grid', gap: '1rem' }}>
             <p className="auth-support-copy">This password reset link is missing or expired. Request a new reset email from the login page.</p>

@@ -28,132 +28,6 @@ const staffPhotos = Object.fromEntries(
   ])
 );
 
-// load event photos grouped by folder name under assets/eventPhotos
-const eventPhotoModules = import.meta.glob('../assets/eventPhotos/**/*.{png,jpg,jpeg,webp,avif}', {
-  eager: true,
-  import: 'default',
-});
-
-const eventGroupsMap = {
-  competitions: {},
-  ceremonies: {},
-  socialsAndServices: {},
-};
-
-function normalizeCategory(raw) {
-  if (!raw) return 'socialsAndServices';
-  const normalized = raw.toString().trim().toLowerCase();
-  if (normalized === 'competitions') return 'competitions';
-  if (normalized === 'ceremonies') return 'ceremonies';
-  if (normalized === 'socials & services' || normalized === 'socials and services') return 'socialsAndServices';
-  return 'socialsAndServices';
-}
-
-Object.entries(eventPhotoModules).forEach(([path, src]) => {
-  // path like ../assets/eventPhotos/CATEGORY/Event Name/file.jpg
-  const parts = path.split('/');
-  const fileName = parts.pop();
-  const folderName = parts.pop() || 'misc';
-  const categoryRaw = parts.pop();
-  const category = normalizeCategory(categoryRaw);
-
-  if (!eventGroupsMap[category][folderName]) eventGroupsMap[category][folderName] = [];
-  eventGroupsMap[category][folderName].push({
-    src,
-    name: fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
-  });
-});
-
-function parseEventTitleAndDate(raw) {
-  const normalized = raw.replace(/[_]/g, ' ').replace(/,/g, ' ').trim();
-  const nameDateMatch = normalized.match(/^((?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?))\s+(\d{1,2}(?:-\d{1,2})?)\s*,?\s+(\d{4})(?:\s+(.+))?$/i);
-  let title = normalized;
-  let date = '';
-  let sortDate = '';
-
-  if (nameDateMatch) {
-    const monthLabel = nameDateMatch[1];
-    const daySegment = nameDateMatch[2];
-    const year = nameDateMatch[3];
-    const rest = nameDateMatch[4] ? nameDateMatch[4].trim() : '';
-    const monthMap = {
-      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-      jul: '07', aug: '08', sep: '09', sept: '09', oct: '10', nov: '11', dec: '12',
-    };
-    const monthKey = monthLabel.slice(0, 3).toLowerCase();
-    const month = monthMap[monthKey] || '01';
-    const day = daySegment.split('-')[0].padStart(2, '0');
-
-    date = `${monthLabel} ${parseInt(day, 10)}, ${year}`;
-    sortDate = `${year}-${month}-${day}`;
-    title = rest || normalized;
-  } else {
-    const numericMatch = normalized.match(/^\s*(\d{4}[-_ ]?\d{2}[-_ ]?\d{2}|\d{2}[-_ ]?\d{2}[-_ ]?\d{4}|\d{8})[ _-]+(.+)$/);
-    if (numericMatch) {
-      const dateString = numericMatch[1].replace(/[-_ ]/g, '');
-      const rest = numericMatch[2].trim();
-      let year = '';
-      let month = '';
-      let day = '';
-
-      if (/^\d{8}$/.test(dateString)) {
-        if (/^\d{4}/.test(dateString)) {
-          year = dateString.slice(0, 4);
-          month = dateString.slice(4, 6);
-          day = dateString.slice(6, 8);
-        } else {
-          month = dateString.slice(0, 2);
-          day = dateString.slice(2, 4);
-          year = dateString.slice(4, 8);
-        }
-      }
-
-      if (year && month && day) {
-        date = `${year}-${month}-${day}`;
-        sortDate = `${year}-${month}-${day}`;
-        title = rest || normalized;
-      }
-    }
-  }
-
-  return { title, date, sortDate };
-}
-
-function buildEventGroups(categoryMap) {
-  return Object.entries(categoryMap)
-    .map(([folder, photos]) => {
-      const raw = folder;
-      const { title, date, sortDate } = parseEventTitleAndDate(raw);
-      const slug = (title || raw)
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-
-      return {
-        title,
-        date,
-        sortDate,
-        slug,
-        description: '',
-        photos: photos.sort((a, b) => a.name.localeCompare(b.name)),
-      };
-    })
-    .sort((a, b) => {
-      if (a.sortDate && b.sortDate) return b.sortDate.localeCompare(a.sortDate);
-      if (a.sortDate) return -1;
-      if (b.sortDate) return 1;
-      return a.title.localeCompare(b.title);
-    });
-}
-
-const eventGroups = {
-  competitions: buildEventGroups(eventGroupsMap.competitions),
-  ceremonies: buildEventGroups(eventGroupsMap.ceremonies),
-  socialsAndServices: buildEventGroups(eventGroupsMap.socialsAndServices),
-};
-
 export const pages = [
   { id: 'home', label: 'Home' },
   { id: 'chain-of-command', label: 'Chain of Command' },
@@ -163,9 +37,9 @@ export const pages = [
 ];
 
 export const photoCollections = {
-  competitions: eventGroups.competitions,
-  ceremonies: eventGroups.ceremonies,
-  socialsAndServices: eventGroups.socialsAndServices,
+  competitions: [],
+  ceremonies: [],
+  socialsAndServices: [],
 };
 
 export const competitionCatalog = [
@@ -432,3 +306,5 @@ export const quickLinks = [
     href: '#/photos',
   },
 ];
+
+export const announcements = [];

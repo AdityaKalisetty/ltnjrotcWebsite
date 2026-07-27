@@ -3,7 +3,15 @@ import SectionHeader from '../components/SectionHeader';
 import { useAuth } from '../context/AuthContext';
 
 function LoginPage() {
-  const { user, loading, signInWithEmail, signUpWithEmail, requestPasswordReset } = useAuth();
+  const {
+    user,
+    loading,
+    isSupabaseConfigured,
+    authUnavailableMessage,
+    signInWithEmail,
+    signUpWithEmail,
+    requestPasswordReset,
+  } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -129,6 +137,14 @@ function LoginPage() {
             <a href="#/dashboard" className="ghost-button">
               Go to Dashboard
             </a>
+          </div>
+        ) : !isSupabaseConfigured ? (
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            <p className="auth-message auth-message--error">{authUnavailableMessage}</p>
+            <p className="auth-support-copy">
+              The public website is still available, but login, account creation, and password
+              reset need the missing production Supabase configuration.
+            </p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>

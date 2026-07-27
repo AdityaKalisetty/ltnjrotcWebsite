@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import SectionHeader from '../components/SectionHeader';
 
+const PHOTOS_PER_PAGE = 12;
+
 function slugify(text) {
   return text
     .toString()
@@ -14,6 +16,7 @@ function EventGallery({ eventSlug, photoCollections }) {
   const [event, setEvent] = useState(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [visiblePhotoCount, setVisiblePhotoCount] = useState(PHOTOS_PER_PAGE);
 
   useEffect(() => {
     const allEvents = [
@@ -23,6 +26,12 @@ function EventGallery({ eventSlug, photoCollections }) {
     ];
     const found = allEvents.find((g) => (g.slug ? g.slug === eventSlug : slugify(g.title) === eventSlug));
     setEvent(found || null);
+  }, [eventSlug]);
+
+  useEffect(() => {
+    setVisiblePhotoCount(PHOTOS_PER_PAGE);
+    setLightboxOpen(false);
+    setSelected(null);
   }, [eventSlug]);
 
   useEffect(() => {
@@ -61,6 +70,10 @@ function EventGallery({ eventSlug, photoCollections }) {
     setSelected(null);
   };
 
+  const photos = event.photos || [];
+  const visiblePhotos = photos.slice(0, visiblePhotoCount);
+  const remainingPhotoCount = photos.length - visiblePhotos.length;
+
   return (
     <section className="page-section">
       <SectionHeader eyebrow={event.date || 'Photos'} title={event.title} text={event.description} />
@@ -71,14 +84,26 @@ function EventGallery({ eventSlug, photoCollections }) {
         </div>
 
         <div className="gallery-grid">
-          {event.photos.map((p, idx) => (
+          {visiblePhotos.map((p, idx) => (
             <figure key={`${p.src}-${idx}`} className="gallery-item">
               <button type="button" className="lightbox-trigger" onClick={() => openLightbox(p)}>
-                <img src={p.src} alt="" loading="lazy" />
+                <img src={p.src} alt="" loading="lazy" decoding="async" />
               </button>
             </figure>
           ))}
         </div>
+
+        {remainingPhotoCount > 0 && (
+          <div className="gallery-load-more">
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => setVisiblePhotoCount((count) => count + PHOTOS_PER_PAGE)}
+            >
+              Load more photos ({remainingPhotoCount} remaining)
+            </button>
+          </div>
+        )}
       </div>
 
       {lightboxOpen && selected && (

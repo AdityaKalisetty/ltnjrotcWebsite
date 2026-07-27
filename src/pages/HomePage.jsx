@@ -6,7 +6,7 @@ function HomePage({
   onPreviousPhoto,
   onNextPhoto,
   onSelectPhoto,
-  quickLinks,
+  announcements,
 }) {
   return (
     <>
@@ -40,7 +40,7 @@ function HomePage({
             </span>
           </h1>
           <p className="hero-text">
-            Developing leaders through service, discipline, academics, and teamwork.
+            Developing leaders through discipline, academics, and teamwork.
           </p>
 
           <div className="hero-actions">
@@ -89,44 +89,68 @@ function HomePage({
         )}
       </section>
 
-      <section className="page-section">
+      <section className="page-section recruiting-video-section">
         <SectionHeader
-          eyebrow="Site Sections"
-          title="Everything Cadets and Families Need"
-          text="These pages give the site a clearer structure for scheduling, leadership information, photos, and future enrollment details."
+          eyebrow="Recruiting Video"
+          title="What It Means To Join."
         />
 
-        <div className="feature-grid">
-          {quickLinks.map((item) => (
-            <a key={item.title} href={item.href} className="feature-card">
-              <p className="card-tag">Explore</p>
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
-            </a>
+        <div className="video-placeholder-card" aria-label="Recruiting video coming soon">
+          <div className="video-placeholder-frame">
+            <div className="video-placeholder-badge">Coming Soon</div>
+            <div className="video-placeholder-play" aria-hidden="true">
+              &gt;
+            </div>
+          </div>
+
+          <div className="video-placeholder-copy">
+            <p className="info-label">Coming Soon</p>
+            <h2>Recruiting video premiere coming soon.</h2>
+            <p className="info-text">
+              Once the video is ready, cadets and families will be
+              able to watch it right here on the home page.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {announcements.length > 0 && (
+      <section className="page-section announcements-section">
+        <SectionHeader
+          eyebrow="Unit Updates"
+          title="Latest Announcements"
+          text="Important reminders, event callouts, and poster updates from the admin team will appear here."
+        />
+
+        <div className="announcement-grid">
+          {announcements.map((announcement) => (
+            <article key={announcement.id} className="announcement-card">
+              {announcement.imageUrl ? (
+                <div className="announcement-poster-shell">
+                  <img
+                    src={announcement.imageUrl}
+                    alt={announcement.title}
+                    className="announcement-poster"
+                    loading="lazy"
+                  />
+                </div>
+              ) : (
+                <div className="announcement-poster-shell announcement-poster-shell--empty">
+                  <span>Poster space</span>
+                </div>
+              )}
+
+              <div className="announcement-copy">
+                <p className="card-tag">{announcement.date || 'Announcement'}</p>
+                <h3>{announcement.title}</h3>
+                <p>{announcement.summary}</p>
+                {announcement.body && <p>{announcement.body}</p>}
+              </div>
+            </article>
           ))}
         </div>
       </section>
-
-      <section className="info-strip">
-        <div className="info-copy">
-          <p className="info-label">Why This Structure</p>
-          <h2>Built for updates throughout the year.</h2>
-          <p className="info-text">
-            The site now has dedicated areas for schedules, leadership, archives, and
-            cadet-only tools so it can keep growing with the company instead of feeling
-            like a single poster page.
-          </p>
-        </div>
-
-        <div className="info-actions">
-          <a href="#/chain-of-command" className="join-button">
-            View Leadership
-          </a>
-          <a href="#/calendar" className="ghost-button">
-            Open Calendar
-          </a>
-        </div>
-      </section>
+      )}
     </>
   );
 }

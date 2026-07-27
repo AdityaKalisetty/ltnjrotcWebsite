@@ -1,275 +1,202 @@
 import SectionHeader from '../components/SectionHeader';
 import crmPdf from '../assets/resources/cadet-reference-manual.pdf';
 
-const rankImageModules = import.meta.glob('../assets/rankInsignias/*.{png,jpg,jpeg,webp,avif}', {
-  eager: true,
-  import: 'default',
-});
-
 const ribbonImageModules = import.meta.glob('../assets/ribbonPhotos/Ribbons/*.{png,jpg,jpeg,webp,avif}', {
   eager: true,
   import: 'default',
 });
 
-const rankImages = Object.fromEntries(
-  Object.entries(rankImageModules).map(([path, src]) => [
-    path.split('/').pop().replace(/\.[^.]+$/, '').toLowerCase(),
-    src,
-  ])
-);
-
 const ribbonImages = Object.fromEntries(
-  Object.entries(ribbonImageModules).map(([path, src]) => [
+  Object.entries(ribbonImageModules).map(([path, source]) => [
     path.split('/').pop().replace(/\.[^.]+$/, '').toLowerCase(),
-    src,
+    source,
   ])
 );
 
-const enlistedRanks = [
-  { label: 'Cadet Seaman Apprentice', short: 'SA' },
-  { label: 'Cadet Seaman', short: 'SN' },
-  { label: 'Cadet Petty Officer 3rd Class', short: 'PO3' },
-  { label: 'Cadet Petty Officer 2nd Class', short: 'PO2' },
-  { label: 'Cadet Petty Officer 1st Class', short: 'PO1' },
-  { label: 'Cadet Chief Petty Officer', short: 'CPO' },
-  { label: 'Cadet Senior Chief Petty Officer', short: 'SCPO' },
+const ribbonNames = [
+  [1, 'Meritorious Achievement'],
+  [2, 'Distinguished Unit'],
+  [3, 'Distinguished Cadet'],
+  [4, 'Honor Cadet'],
+  [5, 'Cadet Achievement'],
+  [6, 'Unit Achievement'],
+  [8, 'Naval Science IV Outstanding Cadet'],
+  [9, 'Naval Science III Outstanding Cadet'],
+  [10, 'Naval Science II Outstanding Cadet'],
+  [11, 'Naval Science I Outstanding Cadet'],
+  [12, 'Exemplary Conduct'],
+  [13, 'Exemplary Personal Appearance'],
+  [14, 'Physical Fitness'],
+  [15, 'Participation'],
+  [16, 'Unit Service'],
+  [17, 'Community Service'],
+  [18, 'Academic Team'],
+  [19, 'Drill Team'],
+  [20, 'Color Guard'],
+  [21, 'STEM'],
+  [23, 'Orienteering'],
+  [24, 'Inter-Service Competition'],
+  [25, 'Recruiting'],
+  [26, 'Basic Leadership Training'],
+  [27, 'Sea Cruise'],
 ];
 
-const officerRanks = [
-  { label: 'Cadet Ensign', short: 'ENS' },
-  { label: 'Cadet Lieutenant Junior Grade', short: 'LTJG' },
-  { label: 'Cadet Lieutenant', short: 'LT' },
-  { label: 'Cadet Lieutenant Commander', short: 'LCDR' },
-  { label: 'Cadet Commander', short: 'CDR' },
+const chainOfCommand = [
+  ['Commander in Chief', 'The Honorable Donald J. Trump'],
+  ['Vice President', 'The Honorable JD Vance'],
+  ['Secretary of Defense', 'The Honorable Pete Hegseth'],
+  ['Secretary of the Navy', 'The Honorable Terrance Emmert'],
+  ['Acting Chief of Naval Operations / CNO', 'James Kilby'],
+  ['Master Chief Petty Officer of the Navy', 'Master Chief Petty Officer James Honea'],
+  ['Commandant of the Marine Corps', 'General Eric Smith'],
+  ['Sergeant Major of the Marine Corps', 'Sergeant Major Carlos Ruiz'],
+  ['Acting Chairman of the Joint Chiefs of Staff', 'Admiral Christopher Grady'],
+  ['Vice Chairman of the Joint Chiefs of Staff', 'Admiral Christopher Grady'],
+  ['Commander, Naval Education and Training Command', 'Rear Admiral Lower Half Jeffery Czerewko'],
+  ['Commander, Naval Service Training Command', 'Rear Admiral Lower Half Craig T. Mattingly'],
+  ['Speaker of the House', 'Mike Johnson'],
 ];
 
-const sampleRibbons = [
-  'Meritorious Achievement',
-  'Distinguished Unit',
-  'Distinguished Cadet',
-  'Honor Cadet',
-  'Cadet Achievement',
-  'Physical Fitness',
-  'Color Guard',
-  'Academic Team',
+const generalOrders = [
+  'Take charge of this post and all government property in view.',
+  'Walk my post in a military manner keeping always on the alert and observing everything that takes place within sight or hearing.',
+  'Report all violations of orders I am instructed to enforce.',
+  'Repeat all calls from posts more distant from the guardhouse or the quarterdeck than my own.',
+  'Quit my post only when properly relieved.',
+  'Receive, obey, and pass on to the sentry who relieves me all orders from the commanding officer, command duty officer, officer of the day, officer of the deck, and all officers and petty officers of the watch only.',
+  'Talk to no one except in the line of duty.',
+  'Give the alarm in case of fire or disorder.',
+  'Call the corporal of the guard or officer of the deck in any case not covered by instructions.',
+  'Salute all officers and all colors and standards not cased.',
+  'Be especially watchful at night, and during the time for challenging, challenge all persons on or near my post, and allow no one to pass without proper authority.',
 ];
 
-const crmSections = [
-  { title: 'Cadet Rank', detail: 'CRM p. 35-36' },
-  { title: 'Leadership', detail: 'CRM p. 36-37' },
-  { title: 'Ribbons & Awards', detail: 'CRM p. 37-42' },
-  { title: 'Ribbon Devices', detail: 'CRM p. 42-45' },
-  { title: 'Uniforms', detail: 'CRM p. 46-59' },
-  { title: 'Fitness & Safety', detail: 'CRM p. 73-79' },
+const leadershipPrinciples = [
+  'Know yourself and seek self-improvement.',
+  'Be technically proficient.',
+  'Seek responsibility and take responsibility for your actions.',
+  'Make sound and timely decisions.',
+  'Set the example.',
+  'Know your people and look out for their well-being.',
+  'Keep your workers informed.',
+  'Develop a sense of responsibility in your workers.',
+  'Ensure that tasks are understood, supervised, and accomplished.',
+  'Train as a team.',
+  'Use the full capabilities of your organization.',
 ];
 
-const uniformChecks = [
-  'Build a clean gig line from shirt front through belt buckle to trouser fly.',
-  'Press the uniform, remove lint, and keep shoes inspection-ready before formation.',
-  'Match belt, socks, undershirt, and shoes to the uniform being worn.',
-  'Keep pockets flat and carry only what the uniform allows.',
+const shipTerms = [
+  ['Aft', 'The rear part of a ship.'], ['Aloft', 'Above or on top of the deck.'],
+  ['Amidships', 'Toward the middle of a ship.'], ['Bearing', 'The direction of an object, expressed from a chart or relative to the vessel heading.'],
+  ['Bilge', 'The rounded lower part of a ship’s hull.'], ['Bow', 'The front part of a ship.'],
+  ['Bridge', 'The platform above the main deck where ship controls are located.'], ['Brig', 'The ship’s jail.'],
+  ['Bulkhead', 'An upright partition separating parts of a ship.'], ['Bunk', 'A bed on a ship.'],
+  ['Buoy', 'An anchored float used to mark a position, hazard, shoal, or mooring.'], ['Capsize', 'To turn over.'],
+  ['Chart', 'A map for navigators.'], ['Cleat', 'A fitting with horn-shaped ends to which lines are made fast.'],
+  ['Compass', 'A magnetic or gyro navigation instrument.'], ['Current', 'The horizontal movement of water.'],
+  ['Deck', 'A floor on a ship.'], ['Dock', 'A protected water area where vessels are moored; often a pier or wharf.'],
+  ['Draft', 'The depth of water displaced by a ship.'], ['Fathom', 'A six-foot unit used to measure water depth.'],
+  ['Fender', 'A cushion between boats or between a boat and pier that prevents damage.'], ['Fouled', 'Jammed, entangled, or dirtied.'],
+  ['Freeboard', 'A ship’s height from the waterline to the main deck.'], ['Galley', 'A ship’s kitchen.'],
+  ['Gear', 'A general term for ropes, blocks, tackle, and other equipment.'], ['Gee Dunk', 'A ship’s store.'],
+  ['Gigline', 'The alignment line of the uniform shirt, belt buckle, and trousers.'], ['Hatch', 'A ship’s door.'],
+  ['Hatchway', 'A covered deck opening that gives access to a lower deck.'], ['Head', 'A restroom on a ship.'],
+  ['Helm', 'The wheel or tiller that controls the rudder.'], ['Hold', 'A below-deck cargo compartment.'],
+  ['Hull', 'The main body of a ship.'], ['Jettison', 'To cast overboard or discard.'],
+  ['Keel', 'The main beam extending along the bottom of a ship.'], ['Ladder', 'Stairs.'],
+  ['Leeward', 'The direction away from the wind.'], ['Mooring', 'An arrangement that secures a boat to a buoy or pier.'],
+  ['National Ensign', 'The national flag when flown by ships and boats.'], ['Overhead', 'The ship’s ceiling.'],
+  ['Overboard', 'Over the side or out of the boat.'], ['Pennant', 'A tapered nautical flag used for identification.'],
+  ['Pogey Bait', 'Candy or sweets.'], ['Port', 'When facing forward, the left side of a ship.'],
+  ['Porthole', 'A ship’s window.'], ['Screw', 'Another name for a ship’s propeller.'],
+  ['Scuttlebutt', 'A water fountain.'], ['Starboard', 'When facing forward, the right side of a ship.'],
+  ['Stern', 'The rear end of a ship.'], ['Stow', 'To pack or store away in an orderly, compact manner.'],
+  ['Superstructure', 'Structures built on a ship’s upper deck.'], ['Underway', 'In motion—not moored, anchored, or aground.'],
+  ['Union Jack', 'The blue field of white stars from the national ensign, flown by U.S. warships at anchor or moored.'],
+  ['Watch', 'A period of duty on a ship.'], ['Waterline', 'The line where the water meets a ship’s side.'],
 ];
-
-const measurementCues = [
-  {
-    title: 'Name Tag',
-    text: 'Center it on the right side, 1/4 inch above the pocket.',
-  },
-  {
-    title: 'Ribbon Rack',
-    text: 'Center it on the left side, 1/4 inch above the pocket.',
-  },
-  {
-    title: 'Service Stars',
-    text: 'Place stars 1/4 inch above the top ribbon row; multiple stars sit 1/4 inch apart.',
-  },
-  {
-    title: 'Collar Insignia',
-    text: 'Position the center 1 7/8 inches from the collar point on the bisecting line.',
-  },
-  {
-    title: 'Garrison Cap',
-    text: 'Rank/rate insignia sits 2 inches from the fore crease and 1 1/2 inches from the bottom edge.',
-  },
-  {
-    title: 'Trouser Hem',
-    text: 'Rear hem should fall about 2 inches from the deck with a single break in front.',
-  },
-];
-
-const uniformTypes = [
-  'Service Dress Blue',
-  'Summer White',
-  'Service Khaki',
-  'Navy Working Uniform',
-];
-
-const cadetEssentials = [
-  'Use proper Navy forms of address',
-  'Know NJROTC and Navy chain of command',
-  'Review the 11 principles of leadership',
-  'Practice ORM and Training Time Out',
-];
-
-const workflowSteps = [
-  'Register for competitions as soon as signups open.',
-  'Upload required PDFs from the dashboard forms modal.',
-  'Keep profile, ribbons, and photo current before inspection or travel.',
-];
-
-function getRankImage(short) {
-  return rankImages[short.toLowerCase()] || null;
-}
-
-function getRibbonImage(name) {
-  return ribbonImages[name.toLowerCase()] || null;
-}
-
-function QuickGrid({ items }) {
-  return (
-    <div className="unit-quick-grid">
-      {items.map((item) => (
-        <article key={item.title} className="unit-quick-card">
-          <strong>{item.title}</strong>
-          <p>{item.detail}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function RankGrid({ title, ranks }) {
-  return (
-    <div className="unit-rank-group">
-      <div className="unit-resource-subhead">
-        <p className="card-tag">{title}</p>
-      </div>
-      <div className="unit-rank-grid">
-        {ranks.map((rank) => (
-          <article key={rank.short} className="unit-rank-card">
-            <span className="unit-rank-badge">
-              {getRankImage(rank.short) ? (
-                <img src={getRankImage(rank.short)} alt={rank.label} />
-              ) : (
-                <span>{rank.short}</span>
-              )}
-            </span>
-            <strong>{rank.short}</strong>
-            <p>{rank.label}</p>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function UnitResourcesPage() {
+  const scrollToSection = (sectionId) => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <section className="page-section unit-resources-page">
-      <SectionHeader
-        eyebrow="Cadet Tools"
-        title="Unit Resources"
-        text="CRM-based quick reference for uniforms, measurements, ranks, awards, and the cadet basics you use most."
-      />
+      <SectionHeader eyebrow="Cadet Tools" title="General Knowledge" text="Core NJROTC knowledge for study, drill, boards, and everyday cadet life." />
 
-      <div className="unit-resources-layout">
-        <section className="content-panel unit-resource-panel unit-resource-panel--hero">
-          <p className="card-tag">Official CRM</p>
-          <h3>Cadet Reference Manual, 2024</h3>
-          <p>
-            This page mirrors the sections cadets actually reach for most: rank, ribbons, devices, uniforms,
-            fitness, safety, and day-of-inspection placement checks.
-          </p>
-          <div className="unit-resource-actions">
-            <a href={crmPdf} target="_blank" rel="noreferrer" className="join-button">
-              Open CRM PDF
-            </a>
-            <a href="#/dashboard" className="ghost-button">
-              Back to Dashboard
-            </a>
-          </div>
-          <p className="unit-resource-note">
-            Use this as the fast view. Use the CRM as the final authority before inspection, boards, or travel.
-          </p>
-          <QuickGrid items={crmSections} />
+      <div className="general-knowledge-shell">
+        <aside className="general-knowledge-nav" aria-label="General Knowledge sections">
+          <p className="card-tag">On this page</p>
+          <button type="button" onClick={() => scrollToSection('cfm')}>CFM</button>
+          <button type="button" onClick={() => scrollToSection('chain-of-command')}>Chain of Command</button>
+          <button type="button" onClick={() => scrollToSection('general-orders')}>General Orders</button>
+          <button type="button" onClick={() => scrollToSection('cadet-creed')}>Cadet Creed</button>
+          <button type="button" onClick={() => scrollToSection('leadership-principles')}>Leadership Principles</button>
+          <button type="button" onClick={() => scrollToSection('ribbons')}>Ribbons</button>
+          <button type="button" onClick={() => scrollToSection('ship-terminology')}>Ship Terminology</button>
+        </aside>
+
+        <div className="unit-resources-layout general-knowledge-layout">
+        <section id="cfm" className="content-panel unit-resource-panel unit-resource-panel--hero">
+          <p className="card-tag">Official Reference</p>
+          <h3>Cadet Field Manual</h3>
+          <p>Use the Cadet Field Manual (CFM) as the official reference for NJROTC standards and procedures.</p>
+          <div className="unit-resource-actions"><a href={crmPdf} target="_blank" rel="noreferrer" className="join-button">Open CFM PDF</a></div>
         </section>
 
-        <section className="content-panel unit-resource-panel">
-          <p className="card-tag">Uniform Basics</p>
-          <h3>Inspection Ready</h3>
-          <ul className="unit-resource-list">
-            {uniformChecks.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-          <div className="unit-chip-row">
-            {uniformTypes.map((item) => (
-              <span key={item} className="unit-chip">
-                {item}
-              </span>
-            ))}
-          </div>
+        <section id="chain-of-command" className="content-panel unit-resource-panel unit-resource-panel--wide">
+          <p className="card-tag">Chain of Command</p>
+          <h3>National and Navy Leadership</h3>
+          <ol className="knowledge-command-list">
+            {chainOfCommand.map(([title, name]) => <li key={title}><strong>{title}:</strong> {name}</li>)}
+          </ol>
         </section>
 
-        <section className="content-panel unit-resource-panel">
-          <p className="card-tag">Measurements</p>
-          <h3>Exact Placement Cues</h3>
-          <div className="unit-measurement-grid">
-            {measurementCues.map((item) => (
-              <article key={item.title} className="unit-measurement-card">
-                <strong>{item.title}</strong>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
+        <section id="general-orders" className="content-panel unit-resource-panel unit-resource-panel--wide">
+          <p className="card-tag">General Orders</p>
+          <h3>Eleven General Orders of a Sentry</h3>
+          <ol className="knowledge-orders-list">
+            {generalOrders.map((order) => <li key={order}>To {order}</li>)}
+          </ol>
         </section>
 
-        <section className="content-panel unit-resource-panel unit-resource-panel--wide">
-          <p className="card-tag">Rank Recognition</p>
-          <h3>Cadet Rank Board</h3>
-          <div className="unit-rank-board">
-            <RankGrid title="Enlisted" ranks={enlistedRanks} />
-            <RankGrid title="Officer" ranks={officerRanks} />
-          </div>
+        <section id="cadet-creed" className="content-panel unit-resource-panel">
+          <p className="card-tag">Cadet Creed</p>
+          <h3>Our Commitment</h3>
+          <p className="knowledge-creed">I am a Navy Junior ROTC Cadet. I strive to promote patriotism and to become an informed and responsible citizen. I respect those in positions of authority. I support those who have defended freedom and democracy around the world. I proudly embrace the Navy’s core values of Honor, Courage, and Commitment. I am committed to excellence and the fair treatment of all.</p>
         </section>
 
-        <section className="content-panel unit-resource-panel">
-          <p className="card-tag">Awards</p>
-          <h3>Ribbon Reference</h3>
-          <div className="unit-ribbon-grid">
-            {sampleRibbons.map((name) => (
-              <article key={name} className="unit-ribbon-card">
-                <span className="unit-ribbon-art">
-                  {getRibbonImage(name) ? <img src={getRibbonImage(name)} alt={name} /> : <span>{name}</span>}
-                </span>
+        <section id="leadership-principles" className="content-panel unit-resource-panel">
+          <p className="card-tag">Leadership</p>
+          <h3>Eleven Leadership Principles</h3>
+          <ol className="knowledge-principles-list">
+            {leadershipPrinciples.map((principle) => <li key={principle}>{principle}</li>)}
+          </ol>
+        </section>
+
+        <section id="ribbons" className="content-panel unit-resource-panel unit-resource-panel--wide">
+          <p className="card-tag">Ribbon Reference</p>
+          <h3>NJROTC Ribbons</h3>
+          <p className="unit-resource-note">Shown in official order of precedence, highest to lowest.</p>
+          <div className="knowledge-ribbon-grid">
+            {ribbonNames.map(([, name]) => (
+              <article key={name}>
+                <img src={ribbonImages[name.toLowerCase()]} alt={`${name} ribbon`} />
                 <strong>{name}</strong>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="content-panel unit-resource-panel">
-          <p className="card-tag">Cadet Essentials</p>
-          <h3>What To Know Weekly</h3>
-          <ul className="unit-resource-list">
-            {cadetEssentials.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-          <ol className="unit-resource-steps">
-            {workflowSteps.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ol>
-          <div className="unit-resource-actions unit-resource-actions--stacked">
-            <a href="#/competitions" className="ghost-button">
-              Competition Registration
-            </a>
-            <a href="#/chain-of-command" className="ghost-button">
-              Chain of Command
-            </a>
+        <section id="ship-terminology" className="content-panel unit-resource-panel unit-resource-panel--wide">
+          <p className="card-tag">Basic Ship Terminology</p>
+          <h3>Speak Navy</h3>
+          <div className="knowledge-terms-grid">
+            {shipTerms.map(([term, definition]) => <article key={term}><strong>{term}</strong><span>{definition}</span></article>)}
           </div>
         </section>
+        </div>
       </div>
     </section>
   );

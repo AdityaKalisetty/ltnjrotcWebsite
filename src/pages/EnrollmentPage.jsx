@@ -5,7 +5,7 @@ function EnrollmentPage() {
     <section className="page-section">
       <SectionHeader
         eyebrow="Enrollment"
-        title="Enrollment Information Coming Soon"
+        title="Enrollment Information Coming Soon."
         text="This page is set aside for enrollment details and will be filled in as the program materials are ready."
       />
 
